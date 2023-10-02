@@ -57,16 +57,13 @@ namespace Bc.Development.Artifacts
       Version.ToString(),
       Country);
 
+    public bool LocalFolderExists => Directory.Exists(LocalFolder);
+
 
     private BcArtifact()
     {
     }
 
-
-    public override string ToString()
-    {
-      return $"{Version} ({Country})";
-    }
 
     public async Task<DateTime?> GetLastUsedDate()
     {
@@ -76,6 +73,28 @@ namespace Bc.Development.Artifacts
       if (!fi.Exists) return null;
       using (var sr = fi.OpenText())
         return new DateTime(long.Parse(await sr.ReadLineAsync()));
+    }
+
+    public async Task<bool> SetLastUsedDate(DateTime? tag = null)
+    {
+      if (!LocalFolderExists) return false;
+      try
+      {
+        var dateTime = (tag ?? DateTime.Now).ToUniversalTime();
+        using (var s = File.CreateText(Path.Combine(LocalFolder, "lastused")))
+          await s.WriteLineAsync($"{dateTime}");
+        return true;
+      }
+      catch
+      {
+        return false;
+      }
+    }
+
+
+    public override string ToString()
+    {
+      return $"{Version} ({Country})";
     }
 
   }

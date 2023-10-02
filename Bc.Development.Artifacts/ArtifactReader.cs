@@ -128,18 +128,6 @@ namespace Bc.Development.Artifacts
       return result;
     }
 
-    private static void TagLastUsed(string resultFolder)
-    {
-      try
-      {
-        File.WriteAllText(Path.Combine(resultFolder, "lastused"), $"{DateTime.UtcNow.Ticks}");
-      }
-      catch
-      {
-        // ignore
-      }
-    }
-
     private static async Task<string> DownloadUri(Uri uri, bool force)
     {
       var mutex = new Mutex(false, $"dl-{uri.ToString().Split('?')[0].Substring(8).Replace('/', '_')}");
@@ -158,7 +146,8 @@ namespace Bc.Development.Artifacts
           folder.Parent?.Create();
           Directory.Move(tempFolder, folder.FullName);
         }
-        TagLastUsed(folder.FullName);
+
+        await af.SetLastUsedDate();
         return folder.FullName;
       }
       finally
@@ -191,7 +180,6 @@ namespace Bc.Development.Artifacts
     {
       return new Uri($"https://{Account}.blob.core.windows.net/{ArtifactType}".ToLowerInvariant());
     }
-
   }
 
 }
