@@ -9,9 +9,10 @@ namespace Bc.Development.Artifacts
   public class BcArtifact
   {
 
-    public static BcArtifact FromLocalFolder(string folder, ArtifactStorageAccount? account = null)
+    public static async Task<BcArtifact> FromLocalFolder(string folder, ArtifactStorageAccount? account = null)
     {
-      var relativePart = folder.Substring(BcContainerHelperConfiguration.Current.BcArtifactsCacheFolder.Length + 1);
+      var config = await BcContainerHelperConfiguration.Load();
+      var relativePart = folder.Substring(config.BcArtifactsCacheFolder.Length + 1);
       var parts = relativePart.Split('\\', '/');
       return new BcArtifact
       {
@@ -51,14 +52,6 @@ namespace Bc.Development.Artifacts
 
     public ArtifactType Type { get; private set; }
 
-    public string LocalFolder => Path.Combine(
-      BcContainerHelperConfiguration.Current.BcArtifactsCacheFolder,
-      Type.ToString().ToLowerInvariant(),
-      Version.ToString(),
-      Country);
-
-    public bool LocalFolderExists => Directory.Exists(LocalFolder);
-
 
     private BcArtifact()
     {
@@ -67,9 +60,9 @@ namespace Bc.Development.Artifacts
 
     public async Task<DateTime?> GetLastUsedDate()
     {
-      var di = new DirectoryInfo(LocalFolder);
-      if (!di.Exists) return null;
-      var fi = new FileInfo(Path.Combine(di.FullName, "lastused"));
+      var localFolder = await GetLocalFolder();
+      if (!localFolder.Exists) return null;
+      var fi = new FileInfo(Path.Combine(localFolder.FullName, "lastused"));
       if (!fi.Exists) return null;
       using (var sr = fi.OpenText())
         return new DateTime(long.Parse(await sr.ReadLineAsync()));
@@ -77,11 +70,12 @@ namespace Bc.Development.Artifacts
 
     public async Task<bool> SetLastUsedDate(DateTime? tag = null)
     {
-      if (!LocalFolderExists) return false;
+      var localFolder = await GetLocalFolder();
+      if (!localFolder.Exists) return false;
       try
       {
         var dateTime = (tag ?? DateTime.Now).ToUniversalTime();
-        using (var s = File.CreateText(Path.Combine(LocalFolder, "lastused")))
+        using (var s = File.CreateText(Path.Combine(localFolder.FullName, "lastused")))
           await s.WriteLineAsync($"{dateTime}");
         return true;
       }
@@ -100,6 +94,17 @@ namespace Bc.Development.Artifacts
         Version,
         Defaults.PlatformIdentifier);
       return FromUri(uri);
+    }
+
+    public async Task<DirectoryInfo> GetLocalFolder()
+    {
+      var config = await BcContainerHelperConfiguration.Load();
+      var folder = Path.Combine(
+        config.BcArtifactsCacheFolder,
+        Type.ToString().ToLowerInvariant(),
+        Version.ToString(),
+        Country);
+      return new DirectoryInfo(folder);
     }
 
 

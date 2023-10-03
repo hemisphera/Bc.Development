@@ -48,7 +48,7 @@ namespace Bc.Development.Artifacts
         mutex.WaitOne();
 
         var af = BcArtifact.FromUri(uri);
-        var folder = new DirectoryInfo(af.LocalFolder);
+        var folder = await af.GetLocalFolder();
         if (folder.Exists && force)
           folder.Delete(true);
 

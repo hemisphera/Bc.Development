@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,27 +11,31 @@ namespace Bc.Development.Artifacts
   public class LocalArtifactCache
   {
 
-    public static BcArtifact[] Enumerate()
+    public static async Task<IAsyncEnumerable<BcArtifact>> Enumerate()
     {
-      var di = new DirectoryInfo(BcContainerHelperConfiguration.Current.BcArtifactsCacheFolder);
+      var config = await BcContainerHelperConfiguration.Load();
+      var di = new DirectoryInfo(config.BcArtifactsCacheFolder);
       var folders = di.GetDirectories()
         .SelectMany(type =>
         {
           return type.GetDirectories().SelectMany(version => version.GetDirectories());
         });
-      return folders.Select(folder => BcArtifact.FromLocalFolder(folder.FullName)).ToArray();
+      return folders.ToAsyncEnumerable()
+        .SelectAwait(async folder => await BcArtifact.FromLocalFolder(folder.FullName));
     }
 
     public static async Task Cleanup(TimeSpan maxAge)
     {
-      var folders = await Enumerate().ToAsyncEnumerable().WhereAwait(async f =>
+      var artifacts = await Enumerate();
+      await artifacts.WhereAwait(async f =>
       {
         var lastUsed = await f.GetLastUsedDate();
         return lastUsed.HasValue && lastUsed.Value < DateTime.Now - maxAge;
-      }).ToArrayAsync();
-
-      foreach (var folder in folders)
-        Directory.Delete(folder.LocalFolder, true);
+      }).ForEachAwaitAsync(async artifact =>
+      {
+        var localFolder = await artifact.GetLocalFolder();
+        if (localFolder.Exists) localFolder.Delete(true);
+      });
     }
 
   }
