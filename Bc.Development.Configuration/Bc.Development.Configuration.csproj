@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/hemisphera/Bc.Development</PackageProjectUrl>
+    <Description>Provides access to Business Central related development configuration files (BcContainerHelper)</Description>
   </PropertyGroup>
 
   <ItemGroup>
