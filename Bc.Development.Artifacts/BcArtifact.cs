@@ -9,13 +9,13 @@ namespace Bc.Development.Artifacts
   public class BcArtifact
   {
 
-    public static BcArtifact FromLocalFolder(string folder)
+    public static BcArtifact FromLocalFolder(string folder, ArtifactStorageAccount? account = null)
     {
       var relativePart = folder.Substring(BcContainerHelperConfiguration.Current.BcArtifactsCacheFolder.Length + 1);
       var parts = relativePart.Split('\\', '/');
       return new BcArtifact
       {
-        StorageAccount = null,
+        StorageAccount = account,
         Type = (ArtifactType)Enum.Parse(typeof(ArtifactType), parts[0], true),
         Version = new Version(parts[1]),
         Country = parts[2],
@@ -30,7 +30,7 @@ namespace Bc.Development.Artifacts
 
       return new BcArtifact
       {
-        StorageAccount = String.IsNullOrEmpty(accountType) ? null : Enum.Parse(typeof(ArtifactStorageAccount), accountType, true),
+        StorageAccount = (ArtifactStorageAccount?)(String.IsNullOrEmpty(accountType) ? null : Enum.Parse(typeof(ArtifactStorageAccount), accountType, true)),
         Type = (ArtifactType)Enum.Parse(typeof(ArtifactType), parts[3], true),
         Version = new Version(parts[4]),
         Country = parts[5],
@@ -39,7 +39,7 @@ namespace Bc.Development.Artifacts
     }
 
 
-    public bool IsPlatform => Country.Equals(ArtifactReader.PlatformIdentifier, StringComparison.OrdinalIgnoreCase);
+    public bool IsPlatform => Country.Equals(Defaults.PlatformIdentifier, StringComparison.OrdinalIgnoreCase);
 
     public Version Version { get; private set; }
 
@@ -47,7 +47,7 @@ namespace Bc.Development.Artifacts
 
     public Uri Uri { get; private set; }
 
-    public object StorageAccount { get; private set; }
+    public ArtifactStorageAccount? StorageAccount { get; private set; }
 
     public ArtifactType Type { get; private set; }
 
@@ -91,10 +91,21 @@ namespace Bc.Development.Artifacts
       }
     }
 
+    public BcArtifact CreatePlatformArtifact()
+    {
+      if (IsPlatform) return this;
+      var uri = ArtifactReader.MakeArtifactUri(
+        StorageAccount ?? Defaults.DefaultStorageAccount,
+        Type,
+        Version,
+        Defaults.PlatformIdentifier);
+      return FromUri(uri);
+    }
+
 
     public override string ToString()
     {
-      return $"{Version} ({Country})";
+      return $"{Type} {Version} ({Country})";
     }
 
   }

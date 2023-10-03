@@ -4,9 +4,9 @@
   public class ArtifactDownloadResult
   {
 
-    public string Folder { get; set; }
+    public BcArtifact Artifact { get; set; }
 
-    public string PlatformFolder { get; set; }
+    public BcArtifact PlatformArtifact { get; set; }
 
   }
 
