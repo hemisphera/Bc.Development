@@ -35,36 +35,38 @@ namespace Bc.Development.Configuration
 
 
 
-    private JObject _innerObject;
+    private JObject _innerObject = new JObject();
 
     public string BcArtifactsCacheFolder
     {
       get => GetSettingValue("bcartifactsCacheFolder", "c:\\bcartifacts.cache");
-      set => _innerObject["bcartifactsCacheFolder"] = value;
+      set => SetSettingValue("bcartifactsCacheFolder", value);
     }
 
     public string HostHelperFolder
     {
-      get => GetSettingValue("hostHelperFolder", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "BcContainerHelper"));
-      set => _innerObject["hostHelperFolder"] = value;
+      get => GetSettingValue("hostHelperFolder", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BcContainerHelper"));
+      set => SetSettingValue("hostHelperFolder", value);
     }
 
 
-    private BcContainerHelperConfiguration()
+    public BcContainerHelperConfiguration()
     {
-      InitDefaults();
     }
 
-    private void InitDefaults()
-    {
-
-      BcArtifactsCacheFolder = "c:\\bcartifacts.cache";
-    }
 
     private T GetSettingValue<T>(string key, T defaultValue = default)
     {
       var token = _innerObject[key];
       return token == null ? defaultValue : token.Value<T>();
+    }
+
+    private void SetSettingValue<T>(string key, T value)
+    {
+      if (_innerObject.ContainsKey(key))
+        _innerObject[key] = new JValue(value);
+      else
+        _innerObject.Add(key, new JValue(value));
     }
 
     public async Task Save()
