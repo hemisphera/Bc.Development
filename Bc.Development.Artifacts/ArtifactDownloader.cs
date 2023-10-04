@@ -1,5 +1,6 @@
 ﻿using Azure.Storage.Blobs;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
@@ -42,30 +43,33 @@ namespace Bc.Development.Artifacts
 
     private static async Task<BcArtifact> DownloadUri(Uri uri, bool force)
     {
-      var mutex = new Mutex(false, $"dl-{uri.ToString().Split('?')[0].Substring(8).Replace('/', '_')}");
-      try
-      {
-        mutex.WaitOne();
-
-        var af = BcArtifact.FromUri(uri);
-        var folder = await af.GetLocalFolder();
-        if (folder.Exists && force)
-          folder.Delete(true);
-
-        if (!folder.Exists)
+      var semaphoreName = $"dl-{uri.ToString().Split('?')[0].Substring(8).Replace('/', '_')}";
+      if (!Semaphore.TryOpenExisting(semaphoreName, out var semaphore))
+        semaphore = new Semaphore(1, 1, semaphoreName);
+      using (semaphore)
+        try
         {
-          var tempFolder = await DownloadUriToTempFolder(uri);
-          folder.Parent?.Create();
-          Directory.Move(tempFolder, folder.FullName);
-        }
+          semaphore.WaitOne();
 
-        await af.SetLastUsedDate();
-        return af;
-      }
-      finally
-      {
-        mutex.ReleaseMutex();
-      }
+          var af = BcArtifact.FromUri(uri);
+          var folder = await af.GetLocalFolder();
+          if (folder.Exists && force)
+            folder.Delete(true);
+
+          if (!folder.Exists)
+          {
+            var tempFolder = await DownloadUriToTempFolder(uri);
+            folder.Parent?.Create();
+            Directory.Move(tempFolder, folder.FullName);
+          }
+
+          await af.SetLastUsedDate();
+          return af;
+        }
+        finally
+        {
+          semaphore.Release();
+        }
     }
 
     private static async Task<string> DownloadUriToTempFolder(Uri uri)
