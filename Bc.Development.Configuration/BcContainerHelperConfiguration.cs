@@ -14,7 +14,7 @@ namespace Bc.Development.Configuration
     private static BcContainerHelperConfiguration _instance;
 
     private static readonly string FilePath = Path.Combine(
-      Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms),
+      Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
       "BcContainerHelper",
       "BcContainerHelper.config.json");
 
