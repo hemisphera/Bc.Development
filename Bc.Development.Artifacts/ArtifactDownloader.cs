@@ -1,6 +1,5 @@
 ﻿using Azure.Storage.Blobs;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
@@ -8,10 +7,8 @@ using Ionic.Zip;
 
 namespace Bc.Development.Artifacts
 {
-
   public static class ArtifactDownloader
   {
-
     public static async Task<ArtifactDownloadResult> Download(Uri artifactUri, bool includePlatform = true, bool force = false)
     {
       var artifact = BcArtifact.FromUri(artifactUri);
@@ -46,6 +43,7 @@ namespace Bc.Development.Artifacts
       var semaphoreName = $"dl-{uri.ToString().Split('?')[0].Substring(8).Replace('/', '_')}";
       if (!Semaphore.TryOpenExisting(semaphoreName, out var semaphore))
         semaphore = new Semaphore(1, 1, semaphoreName);
+
       using (semaphore)
         try
         {
@@ -58,8 +56,8 @@ namespace Bc.Development.Artifacts
 
           if (!folder.Exists)
           {
+            Directory.CreateDirectory(folder.FullName);
             var tempFolder = await DownloadUriToTempFolder(uri);
-            folder.Parent?.Create();
             Directory.Move(tempFolder, folder.FullName);
           }
 
@@ -78,7 +76,7 @@ namespace Bc.Development.Artifacts
       var folder = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
       try
       {
-        if (!folder.Exists) folder.Create();
+        if (!folder.Exists) Directory.CreateDirectory(folder.FullName);
         var bc = new BlobClient(uri);
         using (var fs = tempFile.Create())
           await bc.DownloadToAsync(fs);
@@ -91,7 +89,5 @@ namespace Bc.Development.Artifacts
         if (tempFile.Exists) tempFile.Delete();
       }
     }
-
   }
-
 }
