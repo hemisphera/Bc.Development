@@ -56,8 +56,7 @@ namespace Bc.Development.Artifacts
 
           if (!folder.Exists)
           {
-            Directory.CreateDirectory(folder.FullName);
-            var tempFolder = await DownloadUriToTempFolder(uri);
+            var tempFolder = await DownloadUriToTempFolder(uri, folder.FullName);
             Directory.Move(tempFolder, folder.FullName);
           }
 
@@ -70,19 +69,31 @@ namespace Bc.Development.Artifacts
         }
     }
 
-    private static async Task<string> DownloadUriToTempFolder(Uri uri)
+    private static async Task<string> DownloadUriToTempFolder(Uri uri, string targetFolder)
     {
+      var tempFolder = targetFolder + "_dl";
       var tempFile = new FileInfo(Path.GetTempFileName());
-      var folder = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
       try
       {
-        if (!folder.Exists) Directory.CreateDirectory(folder.FullName);
-        var bc = new BlobClient(uri);
+        if (Directory.Exists(tempFolder)) Directory.Delete(tempFolder, true);
+        Directory.CreateDirectory(tempFolder);
+
         using (var fs = tempFile.Create())
+        {
+          var bc = new BlobClient(uri);
           await bc.DownloadToAsync(fs);
+        }
+
         using (var zf = ZipFile.Read(tempFile.FullName))
-          zf.ExtractAll(folder.FullName, ExtractExistingFileAction.OverwriteSilently);
-        return folder.FullName;
+        {
+          foreach (var zipEntry in zf.Entries)
+          {
+            if (String.IsNullOrEmpty(Path.GetExtension(zipEntry.FileName))) continue;
+            zipEntry.Extract(tempFolder, ExtractExistingFileAction.OverwriteSilently);
+          }
+        }
+
+        return tempFolder;
       }
       finally
       {
