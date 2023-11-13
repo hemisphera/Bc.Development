@@ -14,6 +14,9 @@ namespace Bc.Development.TestRunner
 
     public TimeSpan Duration => FinishTime.Subtract(StartTime);
 
+    public string Message { get; set; }
+
+    public string StackTrace { get; set; }
 
     public override string ToString()
     {
