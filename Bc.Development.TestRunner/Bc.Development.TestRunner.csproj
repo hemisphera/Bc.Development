@@ -2,6 +2,9 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
+        <Description>Provides clinet session helpers and a test runner for BC</Description>
+        <Authors>Hemisphera</Authors>
+        <PackageProjectUrl>https://github.com/hemisphera/Bc.Development</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>

@@ -5,6 +5,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageProjectUrl>https://github.com/hemisphera/Bc.Development</PackageProjectUrl>
     <Description>Provides access to Business Central related development configuration files (BcContainerHelper)</Description>
+    <Authors>Hemisphera</Authors>
   </PropertyGroup>
 
   <ItemGroup>
