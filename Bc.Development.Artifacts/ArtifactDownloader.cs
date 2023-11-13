@@ -35,6 +35,8 @@ namespace Bc.Development.Artifacts
           return result.PlatformArtifact = await DownloadUri(reader.MakeArtifactUri(version, Defaults.PlatformIdentifier), force);
         })
       );
+      if (country == Defaults.PlatformIdentifier)
+        result.PlatformArtifact = result.Artifact;
       return result;
     }
 
