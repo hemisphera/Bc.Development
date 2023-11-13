@@ -8,19 +8,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Reference Include="Microsoft.Dynamics.Framework.UI.Client">
-        <HintPath>..\..\..\..\bcartifacts.cache\onprem\22.0.54157.55195\platform\Test Assemblies\Microsoft.Dynamics.Framework.UI.Client.dll</HintPath>
-        <Private>False</Private>
-      </Reference>
+        <Reference Include="Microsoft.Dynamics.Framework.UI.Client">
+            <HintPath>..\_external\Microsoft.Dynamics.Framework.UI.Client.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-      <PackageReference Include="System.ServiceModel.Primitives" Version="4.10.3" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="System.ServiceModel.Primitives" Version="4.10.3"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Bc.Development.Artifacts\Bc.Development.Artifacts.csproj" />
+        <ProjectReference Include="..\Bc.Development.Artifacts\Bc.Development.Artifacts.csproj"/>
     </ItemGroup>
 
 </Project>

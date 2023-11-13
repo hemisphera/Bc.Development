@@ -1,8 +1,11 @@
 variables:
-  VersionPart_Major: 0
-  VersionPart_Minor: 0
-  VersionPart_Build: '$[counter(format(''{0}.{1}'', variables[''VersionPart_Major''], variables[''VersionPart_Minor'']), 0)]'
-  SlnFilename: Hsp.PsLibrary.sln
+  - name: VersionPart_Major
+    value: 0
+  - name: VersionPart_Minor
+    value: 0
+  - name: VersionPart_Build
+    value: '$[counter(format(''{0}.{1}'', variables[''VersionPart_Major''], variables[''VersionPart_Minor'']), 0)]'
+  - group: Build
 
 name: v$(VersionPart_Major).$(VersionPart_Minor).$(VersionPart_Build)
 
@@ -19,6 +22,12 @@ stages:
     pool: 
       vmImage: 'windows-latest'
     steps:
+    - task: PowerShell@2
+      displayName: 'Prepare'
+      inputs:
+        pwsh: true
+        targetType: filePath
+        filePath: scripts/prepare.ps1
     - task: NuGetToolInstaller@0
       displayName: 'Use NuGet 4.9'
       inputs:
