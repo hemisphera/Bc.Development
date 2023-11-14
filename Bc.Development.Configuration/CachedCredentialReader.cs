@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 
 namespace Bc.Development.Configuration
@@ -41,6 +42,39 @@ namespace Bc.Development.Configuration
       const string filename = "UserPasswordCache.dat";
       var fullPath = Path.Combine(folder, filename);
       return !File.Exists(fullPath) ? null : new CachedCredentialReader(filename);
+    }
+
+
+    /// <summary>
+    /// Returns the cached credential for the given server and servcer instance from any found AL language extension.
+    /// </summary>
+    /// <param name="serverUri">The server URI.</param>
+    /// <param name="serverInstance">The server instance.</param>
+    /// <returns>The found credential, or null if none was found.</returns>
+    public static NetworkCredential GetUserPasswordCredential(Uri serverUri, string serverInstance)
+    {
+      var extensions = AlLanguageExtension.Enumerate();
+      foreach (var extension in extensions.OrderByDescending(e => e.FileVersion))
+      {
+        var credential = GetUserPasswordCredential(serverUri, serverInstance, extension.Folder.FullName);
+        if (credential != null) return credential;
+      }
+
+      return null;
+    }
+
+    /// <summary>
+    /// Returns the cached credential for the given server and servcer instance from the given AL language extension.
+    /// </summary>
+    /// <param name="serverUri">The server URI.</param>
+    /// <param name="serverInstance">The server instance.</param>
+    /// <param name="alLanguageFolder">The folder of the AL language extension.</param>
+    /// <returns>The found credential, or null if none was found.</returns>
+    public static NetworkCredential GetUserPasswordCredential(Uri serverUri, string serverInstance, string alLanguageFolder)
+    {
+      var key = GetUserPasswordCredentialKey(serverUri, serverInstance);
+      var cache = GetUserPasswordCache(alLanguageFolder);
+      return cache?.TryGetCredential(key);
     }
 
     /// <summary>
