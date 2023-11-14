@@ -27,7 +27,7 @@ namespace Bc.Development.TestRunner
       var sw = Stopwatch.StartNew();
       while (session.State != targetState)
       {
-        sessionContext.ThrowExceptions();
+        sessionContext?.ThrowExceptions();
         Thread.Sleep(TimeSpan.FromMilliseconds(100));
         switch (session.State)
         {

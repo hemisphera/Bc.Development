@@ -17,6 +17,7 @@ namespace Bc.Development.TestRunner
 
     public static SessionContext Get(ClientSession session)
     {
+      if (session.Info == null) return null;
       lock (Sessions)
       {
         var item = Sessions.FirstOrDefault(s => s._session.Info.SessionId == session.Info.SessionId);
@@ -30,6 +31,14 @@ namespace Bc.Development.TestRunner
       }
     }
 
+    public static void Remove(ClientSession session)
+    {
+      lock (Sessions)
+      {
+        var item = Get(session);
+        if (item != null) Sessions.Remove(item);
+      }
+    }
 
     public ConcurrentBag<Exception> Exceptions { get; } = new ConcurrentBag<Exception>();
 

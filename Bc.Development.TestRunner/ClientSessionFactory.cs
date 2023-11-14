@@ -144,6 +144,8 @@ namespace Bc.Development.TestRunner
       session.DialogToShow -= ClientSessionOnDialogToShow;
       session.FormToShow -= CatchFormHandler;
 
+      SessionContext.Remove(session);
+
       try
       {
         session.CloseSessionAsync();
