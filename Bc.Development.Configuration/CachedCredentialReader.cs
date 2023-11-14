@@ -109,7 +109,8 @@ namespace Bc.Development.Configuration
     /// <returns>The credential key.</returns>
     public static string GetUserPasswordCredentialKey(Uri serverUri, string serverInstance)
     {
-      return serverUri.NormalizeBcServerUri().ToString().ToLowerInvariant() + "_" + serverInstance.ToLowerInvariant();
+      var serverPart = serverUri.NormalizeBcServerUri().ToString().ToLowerInvariant().TrimEnd('/');
+      return serverPart + "_" + serverInstance.ToLowerInvariant();
     }
 
     /// <summary>
