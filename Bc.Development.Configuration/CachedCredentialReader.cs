@@ -41,7 +41,7 @@ namespace Bc.Development.Configuration
     {
       const string filename = "UserPasswordCache.dat";
       var fullPath = Path.Combine(folder, filename);
-      return !File.Exists(fullPath) ? null : new CachedCredentialReader(filename);
+      return !File.Exists(fullPath) ? null : new CachedCredentialReader(fullPath);
     }
 
 
@@ -86,7 +86,7 @@ namespace Bc.Development.Configuration
     {
       const string filename = "ServerInfoCache.dat";
       var fullPath = Path.Combine(folder, filename);
-      return !File.Exists(fullPath) ? null : new CachedCredentialReader(filename);
+      return !File.Exists(fullPath) ? null : new CachedCredentialReader(fullPath);
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ namespace Bc.Development.Configuration
     {
       const string filename = "TokenKeyCache.dat";
       var fullPath = Path.Combine(folder, filename);
-      return !File.Exists(fullPath) ? null : new CachedCredentialReader(filename);
+      return !File.Exists(fullPath) ? null : new CachedCredentialReader(fullPath);
     }
 
     /// <summary>
