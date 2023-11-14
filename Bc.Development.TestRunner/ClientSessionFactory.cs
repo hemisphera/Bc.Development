@@ -7,14 +7,14 @@ using Microsoft.Dynamics.Framework.UI.Client;
 
 namespace Bc.Development.TestRunner
 {
-  public static class ClientSessionFactory
+  internal static class ClientSessionFactory
   {
-    public static ClientSession Create(
-      Uri serverUri, AuthenticationScheme authScheme, NetworkCredential credential,
+    public static ClientSession CreateUserPassword(
+      Uri serverUri, NetworkCredential credential,
       ClientSessionSettings settings = null)
     {
       var provider = ServiceAddressProvider.ServiceAddress(serverUri);
-      var client = new JsonHttpClient(provider, credential, authScheme);
+      var client = new JsonHttpClient(provider, credential, AuthenticationScheme.UserNamePassword);
       ConfigureUnderlyingHttpClient(client);
       var clientSession = new ClientSession(client, new NonDispatcher(), new TimerFactory<TaskTimer>());
 

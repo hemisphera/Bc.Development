@@ -1,19 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
+using Bc.Development.Configuration;
 using Microsoft.Dynamics.Framework.UI.Client;
 using Newtonsoft.Json;
 
 namespace Bc.Development.TestRunner
 {
-  public class TestRunner
+  public class AlTestRunner : IDisposable
   {
     private const int TestPageId = 130455;
 
     private readonly ClientSession _session;
 
-    public TestRunner(ClientSession session)
+    public AlTestRunner(Uri serverUri, string serverInstance, NetworkCredential credential, ClientSessionSettings settings = null)
+      : this(new Uri(serverUri.NormalizeBcServerUri(), serverInstance), credential, settings)
     {
-      _session = session;
+    }
+
+    public AlTestRunner(Uri fullServiceUri, NetworkCredential credential, ClientSessionSettings settings = null)
+    {
+      _session = ClientSessionFactory.CreateUserPassword(fullServiceUri, credential, settings);
     }
 
     public CommandLineTestToolResponse[] RunTests(string suiteName, Guid appId)
@@ -33,6 +40,11 @@ namespace Bc.Development.TestRunner
       }
 
       return responses.ToArray();
+    }
+
+    public void Dispose()
+    {
+      ClientSessionFactory.Close(_session);
     }
   }
 }

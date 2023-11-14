@@ -67,16 +67,6 @@ namespace Bc.Development.Configuration
       return !File.Exists(fullPath) ? null : new CachedCredentialReader(filename);
     }
 
-
-    private static Uri NormalizeServerUri(Uri serverUri)
-    {
-      return new UriBuilder
-      {
-        Scheme = serverUri.Scheme,
-        Host = serverUri.Host
-      }.Uri;
-    }
-
     /// <summary>
     /// Creates a credential key for a given server uri and server instance.
     /// </summary>
@@ -85,7 +75,7 @@ namespace Bc.Development.Configuration
     /// <returns>The credential key.</returns>
     public static string GetUserPasswordCredentialKey(Uri serverUri, string serverInstance)
     {
-      return NormalizeServerUri(serverUri).ToString().ToLowerInvariant() + "_" + serverInstance.ToLowerInvariant();
+      return serverUri.NormalizeBcServerUri().ToString().ToLowerInvariant() + "_" + serverInstance.ToLowerInvariant();
     }
 
     /// <summary>
