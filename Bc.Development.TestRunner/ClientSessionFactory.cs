@@ -64,14 +64,14 @@ namespace Bc.Development.TestRunner
     private static void ClientSessionOnDialogToShow(object sender, ClientDialogToShowEventArgs e)
     {
       var dialog = e.DialogToShow;
-      if (dialog.ControlIdentifier == Extensions.ErrorControlIdentifier)
+      if (dialog.ControlIdentifier == InternalExtensions.ErrorControlIdentifier)
       {
         var message = e.DialogToShow.ContainedControls.OfType<ClientStaticStringControl>().FirstOrDefault()?.StringValue;
         dialog.Close();
         throw new Exception(message);
       }
 
-      if (e.DialogToShow.ControlIdentifier == Extensions.WarningControlIdentifier)
+      if (e.DialogToShow.ControlIdentifier == InternalExtensions.WarningControlIdentifier)
       {
         dialog.Close();
         return;

@@ -2,7 +2,7 @@
 
 namespace Bc.Development.TestRunner
 {
-  public class CommandLineTestToolResponseResult
+  public class CommandLineTestToolMethod
   {
     public string Method { get; set; }
 

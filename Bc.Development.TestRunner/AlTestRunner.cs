@@ -52,9 +52,9 @@ namespace Bc.Development.TestRunner
     /// <param name="suiteName">The ID of the suite to use for running the tests.</param>
     /// <param name="appId">The ID of the app.</param>
     /// <returns>The test results.</returns>
-    public CommandLineTestToolResponse[] RunTests(string suiteName, Guid appId)
+    public CommandLineTestToolCodeunit[] RunTests(string suiteName, Guid appId)
     {
-      var responses = new List<CommandLineTestToolResponse>();
+      var responses = new List<CommandLineTestToolCodeunit>();
       var page = _session.OpenForm(TestPageId);
       page.GetControlByName("CurrentSuiteName").SaveValue(suiteName);
       page.GetControlByName("ExtensionId").SaveValue($"{appId}");
@@ -65,7 +65,7 @@ namespace Bc.Development.TestRunner
         page.GetActionByName("RunNextTest").Invoke();
         var response = page.GetControlByName("TestResultJson").StringValue;
         if (response.Equals("All tests executed.", StringComparison.OrdinalIgnoreCase)) break;
-        responses.Add(JsonConvert.DeserializeObject<CommandLineTestToolResponse>(response));
+        responses.Add(JsonConvert.DeserializeObject<CommandLineTestToolCodeunit>(response));
       }
 
       return responses.ToArray();

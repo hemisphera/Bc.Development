@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Bc.Development.TestRunner
 {
-  public class CommandLineTestToolResponse
+  public class CommandLineTestToolCodeunit
   {
     public string Name { get; set; }
 
@@ -15,7 +15,7 @@ namespace Bc.Development.TestRunner
 
     public TimeSpan Duration => FinishTime.Subtract(StartTime);
 
-    public CommandLineTestToolResponseResult[] TestResults { get; set; }
+    public CommandLineTestToolMethod[] TestResults { get; set; }
 
     public override string ToString()
     {
