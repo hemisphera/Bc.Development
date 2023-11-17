@@ -13,8 +13,9 @@ namespace Bc.Development.TestRunner.ResultsWriters
 
     public Task Write(IEnumerable<CommandLineTestToolCodeunit> codeunits)
     {
-      var l1Spacer = "".PadLeft(4);
-      var l2Spacer = "".PadLeft(11);
+      var l1Spacer = "".PadLeft(2);
+      var l2Spacer = "".PadLeft(9);
+      var l3Spacer = "".PadLeft(11);
 
       foreach (var codeunit in codeunits)
       {
@@ -26,10 +27,10 @@ namespace Bc.Development.TestRunner.ResultsWriters
             Console.WriteLine(l2Spacer + method.Message);
           if (!String.IsNullOrEmpty(method.StackTrace))
           {
-            var lines = method.StackTrace.Split('\n');
+            var lines = method.StackTrace.Split(';');
             foreach (var line in lines)
             {
-              Console.WriteLine(l2Spacer + line.Trim('\r'));
+              Console.WriteLine(l3Spacer + line.Trim('\r'));
             }
           }
         }
