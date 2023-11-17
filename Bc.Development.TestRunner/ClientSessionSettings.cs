@@ -103,5 +103,10 @@ namespace Bc.Development.TestRunner
     /// Specifies the time zone to use for the client session.
     /// </summary>
     public TimeZoneInfo TimeZone { get; set; } = TimeZoneInfo.Local;
+
+    /// <summary>
+    /// Specifies the timeout for the client session.
+    /// </summary>
+    public TimeSpan ClientTimeout { get; set; } = TimeSpan.FromSeconds(30);
   }
 }

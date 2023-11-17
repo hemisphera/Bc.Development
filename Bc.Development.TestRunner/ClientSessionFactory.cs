@@ -15,21 +15,20 @@ namespace Bc.Development.TestRunner
     {
       var provider = ServiceAddressProvider.ServiceAddress(serverUri);
       var client = new JsonHttpClient(provider, credential, AuthenticationScheme.UserNamePassword);
-      ConfigureUnderlyingHttpClient(client);
+      var actualSettings = settings ?? ClientSessionSettings.Default;
+      ConfigureUnderlyingHttpClient(client, actualSettings);
       var clientSession = new ClientSession(client, new NonDispatcher(), new TimerFactory<TaskTimer>());
-
-      OpenSession(clientSession, settings ?? ClientSessionSettings.Default);
+      OpenSession(clientSession, actualSettings);
       return clientSession;
     }
 
-    private static void ConfigureUnderlyingHttpClient(JsonHttpClient client)
+    private static void ConfigureUnderlyingHttpClient(JsonHttpClient client, ClientSessionSettings settings)
     {
       var httpClientField = client.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
       if (!(httpClientField?.GetValue(client) is HttpClient httpClient)) return;
 
-      httpClient.Timeout = TimeSpan.FromSeconds(10);
+      httpClient.Timeout = settings.ClientTimeout;
     }
-
 
     private static void OpenSession(ClientSession session, ClientSessionSettings settings)
     {
