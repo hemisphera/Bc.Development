@@ -76,7 +76,7 @@ namespace Bc.Development.Artifacts
       {
         var dateTime = (tag ?? DateTime.Now).ToUniversalTime();
         using (var s = File.CreateText(Path.Combine(localFolder.FullName, "lastused")))
-          await s.WriteLineAsync($"{dateTime}");
+          await s.WriteLineAsync($"{dateTime.Ticks}");
         return true;
       }
       catch
