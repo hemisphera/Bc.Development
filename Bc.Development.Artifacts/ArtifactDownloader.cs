@@ -7,19 +7,46 @@ using Ionic.Zip;
 
 namespace Bc.Development.Artifacts
 {
+  /// <summary>
+  /// Downloads BC artifacts.
+  /// </summary>
   public static class ArtifactDownloader
   {
+    /// <summary>
+    /// Downloads the artifact specified through the artifact URI to the local cache folder.
+    /// </summary>
+    /// <param name="artifactUri">The artifact URI.</param>
+    /// <param name="includePlatform">Specifies if platform artifacts should be downloaded as well.</param>
+    /// <param name="force">Specifies if the artifact should be downloaded even if it already exists in the cache.</param>
+    /// <returns>The download result.</returns>
     public static async Task<ArtifactDownloadResult> Download(Uri artifactUri, bool includePlatform = true, bool force = false)
     {
       var artifact = BcArtifact.FromUri(artifactUri);
       return await Download(artifact, includePlatform, force);
     }
 
+    /// <summary>
+    /// Downloads the artifact to the local cache folder.
+    /// </summary>
+    /// <param name="artifact">The artifact to download.</param>
+    /// <param name="includePlatform">Specifies if platform artifacts should be downloaded as well.</param>
+    /// <param name="force">Specifies if the artifact should be downloaded even if it already exists in the cache.</param>
+    /// <returns>The download result.</returns>
     public static async Task<ArtifactDownloadResult> Download(BcArtifact artifact, bool includePlatform = true, bool force = false)
     {
       return await Download(artifact.StorageAccount ?? Defaults.DefaultStorageAccount, artifact.Type, artifact.Version, artifact.Country, includePlatform, force);
     }
 
+    /// <summary>
+    /// Downloads the artifact with the specified properties to the local cache.
+    /// </summary>
+    /// <param name="account">The artifact storage account.</param>
+    /// <param name="type">The artifact type.</param>
+    /// <param name="version">The version prefix.</param>
+    /// <param name="country">The country.</param>
+    /// <param name="includePlatform">Specifies if platform artifacts should be downloaded as well.</param>
+    /// <param name="force">Specifies if the artifact should be downloaded even if it already exists in the cache.</param>
+    /// <returns>The download result.</returns>
     public static async Task<ArtifactDownloadResult> Download(ArtifactStorageAccount account, ArtifactType type, Version version, string country, bool includePlatform = true, bool force = false)
     {
       if (includePlatform && country.Equals(Defaults.PlatformIdentifier, StringComparison.OrdinalIgnoreCase))

@@ -7,23 +7,29 @@ using Bc.Development.Configuration;
 
 namespace Bc.Development.Artifacts
 {
-
+  /// <summary>
+  /// The local artifact cache.
+  /// </summary>
   public class LocalArtifactCache
   {
-
+    /// <summary>
+    /// Lists all locally available artifacts.
+    /// </summary>
+    /// <returns>The artifacts.</returns>
     public static async Task<IAsyncEnumerable<BcArtifact>> Enumerate()
     {
       var config = await BcContainerHelperConfiguration.Load();
       var di = new DirectoryInfo(config.BcArtifactsCacheFolder);
       var folders = di.GetDirectories()
-        .SelectMany(type =>
-        {
-          return type.GetDirectories().SelectMany(version => version.GetDirectories());
-        });
+        .SelectMany(type => { return type.GetDirectories().SelectMany(version => version.GetDirectories()); });
       return folders.ToAsyncEnumerable()
         .SelectAwait(async folder => await BcArtifact.FromLocalFolder(folder.FullName));
     }
 
+    /// <summary>
+    /// Cleans up the local artifact cache, removing artifacts not used for the specified time.
+    /// </summary>
+    /// <param name="maxAge">The maximum age.</param>
     public static async Task Cleanup(TimeSpan maxAge)
     {
       var artifacts = await Enumerate();
@@ -37,7 +43,5 @@ namespace Bc.Development.Artifacts
         if (localFolder.Exists) localFolder.Delete(true);
       });
     }
-
   }
-
 }

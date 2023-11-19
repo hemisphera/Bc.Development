@@ -6,11 +6,12 @@ using Newtonsoft.Json.Linq;
 
 namespace Bc.Development.Configuration
 {
-
+  /// <summary>
+  /// BcContainerHelper configuration 
+  /// </summary>
   [JsonObject(MemberSerialization.OptIn)]
   public class BcContainerHelperConfiguration
   {
-
     private static BcContainerHelperConfiguration _instance;
 
     private static readonly string FilePath = Path.Combine(
@@ -19,6 +20,11 @@ namespace Bc.Development.Configuration
       "BcContainerHelper.config.json");
 
 
+    /// <summary>
+    /// Load the configuration from disk. This will cache the configuration in memory, once loaded.
+    /// </summary>
+    /// <param name="force">Force reload from disk, even if the configuration was already loaded.</param>
+    /// <returns>An instance of the configuration.</returns>
     public static async Task<BcContainerHelperConfiguration> Load(bool force = false)
     {
       if (_instance != null && !force) return _instance;
@@ -30,19 +36,25 @@ namespace Bc.Development.Configuration
         var jsonContents = await fs.ReadToEndAsync();
         _instance._innerObject = JObject.Parse(jsonContents);
       }
+
       return _instance;
     }
 
 
-
     private JObject _innerObject = new JObject();
 
+    /// <summary>
+    /// The folder where BC artifacts are stored
+    /// </summary>
     public string BcArtifactsCacheFolder
     {
       get => GetSettingValue("bcartifactsCacheFolder", "c:\\bcartifacts.cache");
       set => SetSettingValue("bcartifactsCacheFolder", value);
     }
 
+    /// <summary>
+    /// The BcContainerHelper host helper folder.
+    /// </summary>
     public string HostHelperFolder
     {
       get => GetSettingValue("hostHelperFolder", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BcContainerHelper"));
@@ -50,6 +62,8 @@ namespace Bc.Development.Configuration
     }
 
 
+    /// <summary>
+    /// </summary>
     public BcContainerHelperConfiguration()
     {
     }
@@ -69,6 +83,9 @@ namespace Bc.Development.Configuration
         _innerObject.Add(key, new JValue(value));
     }
 
+    /// <summary>
+    /// Write the configuration to disk.
+    /// </summary>
     public async Task Save()
     {
       using (var fs = File.CreateText(FilePath))
@@ -77,7 +94,5 @@ namespace Bc.Development.Configuration
         await fs.WriteAsync(jsonContents);
       }
     }
-
   }
-
 }
