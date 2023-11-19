@@ -27,9 +27,9 @@ namespace Bc.Development.TestRunner.ResultsWriters
         await Stream.FlushAsync();
         Stream.Close();
       }
-      catch (ObjectDisposedException disp)
+      catch (ObjectDisposedException)
       {
-        // ignore
+        // ignore failure caused by already closed/disposed streams
       }
 
       Stream = null;
