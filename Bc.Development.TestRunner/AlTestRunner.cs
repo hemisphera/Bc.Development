@@ -54,12 +54,39 @@ namespace Bc.Development.TestRunner
     /// <returns>The test results.</returns>
     public CommandLineTestToolCodeunit[] RunTests(string suiteName, Guid appId)
     {
-      var responses = new List<CommandLineTestToolCodeunit>();
       var page = _session.OpenForm(TestPageId);
       page.GetControlByName("CurrentSuiteName").SaveValue(suiteName);
       page.GetControlByName("ExtensionId").SaveValue($"{appId}");
       page.GetActionByName("ClearTestResults").Invoke();
 
+      return ExecuteTests(page);
+    }
+
+
+    /// <summary>
+    /// Run a specific (or all tests) in the specified codeunit.
+    /// </summary>
+    /// <param name="suiteName">The ID of the suite to use for running the tests.</param>
+    /// <param name="codeunitId">The ID of the test codeunit to run tests for.</param>
+    /// <param name="methodName">If specified, runs only the given test method.</param>
+    /// <returns>The test results.</returns>
+    public CommandLineTestToolCodeunit[] RunTests(string suiteName, int codeunitId, string methodName = null)
+    {
+      var page = _session.OpenForm(TestPageId);
+      page.GetControlByName("CurrentSuiteName").SaveValue(suiteName);
+      page.GetControlByName("TestCodeunitRangeFilter").SaveValue($"{codeunitId}");
+      if (!String.IsNullOrEmpty(methodName))
+      {
+        page.GetControlByName("TestProcedureRangeFilter").SaveValue(methodName);
+      }
+
+      return ExecuteTests(page);
+    }
+
+    private static CommandLineTestToolCodeunit[] ExecuteTests(ClientLogicalControl page)
+    {
+      var responses = new List<CommandLineTestToolCodeunit>();
+      page.GetActionByName("ClearTestResults").Invoke();
       while (true)
       {
         page.GetActionByName("RunNextTest").Invoke();
@@ -71,6 +98,7 @@ namespace Bc.Development.TestRunner
       return responses.ToArray();
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
       ClientSessionFactory.Close(_session);

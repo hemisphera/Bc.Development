@@ -21,14 +21,21 @@ namespace Bc.Development.Artifacts
       var config = await BcContainerHelperConfiguration.Load();
       var relativePart = folder.Substring(config.BcArtifactsCacheFolder.Length + 1);
       var parts = relativePart.Split('\\', '/');
-      return new BcArtifact
+      try
       {
-        StorageAccount = account,
-        Type = (ArtifactType)Enum.Parse(typeof(ArtifactType), parts[0], true),
-        Version = new Version(parts[1]),
-        Country = parts[2],
-        Uri = null
-      };
+        return new BcArtifact
+        {
+          StorageAccount = account,
+          Type = (ArtifactType)Enum.Parse(typeof(ArtifactType), parts[0], true),
+          Version = new Version(parts[1]),
+          Country = parts[2],
+          Uri = null
+        };
+      }
+      catch
+      {
+        return null;
+      }
     }
 
     /// <summary>

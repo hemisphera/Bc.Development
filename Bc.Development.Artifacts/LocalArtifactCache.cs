@@ -10,7 +10,7 @@ namespace Bc.Development.Artifacts
   /// <summary>
   /// The local artifact cache.
   /// </summary>
-  public class LocalArtifactCache
+  public static class LocalArtifactCache
   {
     /// <summary>
     /// Lists all locally available artifacts.
@@ -23,7 +23,8 @@ namespace Bc.Development.Artifacts
       var folders = di.GetDirectories()
         .SelectMany(type => { return type.GetDirectories().SelectMany(version => version.GetDirectories()); });
       return folders.ToAsyncEnumerable()
-        .SelectAwait(async folder => await BcArtifact.FromLocalFolder(folder.FullName));
+        .SelectAwait(async folder => await BcArtifact.FromLocalFolder(folder.FullName))
+        .Where(a => a != null);
     }
 
     /// <summary>
