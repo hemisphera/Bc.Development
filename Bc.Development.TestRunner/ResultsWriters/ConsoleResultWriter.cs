@@ -4,13 +4,18 @@ using System.Threading.Tasks;
 
 namespace Bc.Development.TestRunner.ResultsWriters
 {
+  /// <summary>
+  /// Writes the test results to the console.
+  /// </summary>
   public class ConsoleResultWriter : ITestResultWriter
   {
+    /// <inheritdoc />
     public Task BeginWrite()
     {
       return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
     public Task Write(IEnumerable<CommandLineTestToolCodeunit> codeunits)
     {
       var l1Spacer = "".PadLeft(2);
@@ -19,10 +24,10 @@ namespace Bc.Development.TestRunner.ResultsWriters
 
       foreach (var codeunit in codeunits)
       {
-        Console.WriteLine($"Codeunit {codeunit.Codeunit} {codeunit.Name} ({codeunit.Duration.TotalSeconds}s)");
-        foreach (var method in codeunit.TestResults)
+        Console.WriteLine($"Codeunit {codeunit.CodeunitId} {codeunit.Name} ({codeunit.Duration.TotalSeconds}s)");
+        foreach (var method in codeunit.Methods)
         {
-          Console.WriteLine(l1Spacer + FormatResult(method.Result) + " Method " + method.Method + " (" + method.Duration.TotalSeconds + "s)");
+          Console.WriteLine(l1Spacer + FormatResult(method.Result) + " Method " + method.MethodName + " (" + method.Duration.TotalSeconds + "s)");
           if (!String.IsNullOrEmpty(method.Message))
             Console.WriteLine(l2Spacer + method.Message);
           if (!String.IsNullOrEmpty(method.StackTrace))
@@ -54,6 +59,7 @@ namespace Bc.Development.TestRunner.ResultsWriters
       }
     }
 
+    /// <inheritdoc />
     public Task EndWrite()
     {
       return Task.CompletedTask;

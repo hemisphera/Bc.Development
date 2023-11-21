@@ -10,7 +10,7 @@ namespace Bc.Development.TestRunner
 {
   internal static class InternalExtensions
   {
-    private static readonly TimeSpan AwaitStateTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan AwaitStateTimeout = TimeSpan.FromSeconds(20);
 
     public const string ErrorControlIdentifier = "00000000-0000-0000-0800-0000836bd2d2";
 

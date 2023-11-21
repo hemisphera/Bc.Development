@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Bc.Development.Configuration;
 using Microsoft.Dynamics.Framework.UI.Client;
@@ -52,7 +53,7 @@ namespace Bc.Development.TestRunner
     /// <param name="suiteName">The ID of the suite to use for running the tests.</param>
     /// <param name="appId">The ID of the app.</param>
     /// <returns>The test results.</returns>
-    public CommandLineTestToolCodeunit[] RunTests(string suiteName, Guid appId)
+    public IEnumerable<CommandLineTestToolCodeunit> RunTests(string suiteName, Guid appId)
     {
       var page = _session.OpenForm(TestPageId);
       page.GetControlByName("CurrentSuiteName").SaveValue(suiteName);
@@ -62,7 +63,6 @@ namespace Bc.Development.TestRunner
       return ExecuteTests(page);
     }
 
-
     /// <summary>
     /// Run a specific (or all tests) in the specified codeunit.
     /// </summary>
@@ -70,7 +70,7 @@ namespace Bc.Development.TestRunner
     /// <param name="codeunitId">The ID of the test codeunit to run tests for.</param>
     /// <param name="methodName">If specified, runs only the given test method.</param>
     /// <returns>The test results.</returns>
-    public CommandLineTestToolCodeunit[] RunTests(string suiteName, int codeunitId, string methodName = null)
+    public IEnumerable<CommandLineTestToolCodeunit> RunTests(string suiteName, int codeunitId, string methodName = null)
     {
       var page = _session.OpenForm(TestPageId);
       page.GetControlByName("CurrentSuiteName").SaveValue(suiteName);
@@ -83,9 +83,60 @@ namespace Bc.Development.TestRunner
       return ExecuteTests(page);
     }
 
-    private static CommandLineTestToolCodeunit[] ExecuteTests(ClientLogicalControl page)
+    /// <summary>
+    /// Run a specific (or all tests) in the specified codeunit.
+    /// </summary>
+    /// <param name="suiteName">The ID of the suite to use for running the tests.</param>
+    /// <param name="playlist">Specifies a list of codeunits and methods to run.</param>
+    /// <param name="groupByCodeunit">
+    /// Specifies if the results should be aggregated per codeunit (true) or returned the same order they were specified
+    /// in the playlist (false).
+    /// </param>
+    /// <returns>The test results.</returns>
+    public IEnumerable<CommandLineTestToolCodeunit> RunTests(string suiteName, IEnumerable<TestPlaylistEntry> playlist, bool groupByCodeunit = false)
+    {
+      var results = new List<CommandLineTestToolCodeunit>();
+      var page = _session.OpenForm(TestPageId);
+      foreach (var entry in playlist)
+      {
+        page.GetControlByName("CurrentSuiteName").SaveValue(suiteName);
+        page.GetControlByName("TestCodeunitRangeFilter").SaveValue($"{entry.CodeunitId}");
+        if (!String.IsNullOrEmpty(entry.MethodName))
+        {
+          page.GetControlByName("TestProcedureRangeFilter").SaveValue(entry.MethodName);
+        }
+
+        ExecuteTests(page, results, groupByCodeunit);
+      }
+
+      return results;
+    }
+
+    private static void ExecuteTests(ClientLogicalControl page, ICollection<CommandLineTestToolCodeunit> results, bool groupByCodeunit)
+    {
+      var actualCodeunits = ExecuteTests(page);
+      foreach (var actualCodeunit in actualCodeunits)
+      {
+        var foundCodeunit = groupByCodeunit
+          ? results.FirstOrDefault(codeunit => codeunit.CodeunitId == actualCodeunit.CodeunitId)
+          : null;
+        if (foundCodeunit == null)
+        {
+          foundCodeunit = new CommandLineTestToolCodeunit();
+          results.Add(foundCodeunit);
+        }
+
+        foreach (var method in actualCodeunit.Methods)
+        {
+          foundCodeunit.Methods.Add(method);
+        }
+      }
+    }
+
+    private static IEnumerable<CommandLineTestToolCodeunit> ExecuteTests(ClientLogicalControl page)
     {
       var responses = new List<CommandLineTestToolCodeunit>();
+
       page.GetActionByName("ClearTestResults").Invoke();
       while (true)
       {

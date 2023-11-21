@@ -6,13 +6,19 @@ using System.Xml;
 
 namespace Bc.Development.TestRunner.ResultsWriters
 {
+  /// <summary>
+  /// Writes the test results as XUnit XML.
+  /// </summary>
   public class XUnitResultsWriter : FileResultsWriter
   {
+    /// <summary>
+    /// </summary>
     public XUnitResultsWriter(string filename)
     {
       Filename = filename;
     }
 
+    /// <inheritdoc />
     public override async Task Write(IEnumerable<CommandLineTestToolCodeunit> codeunits)
     {
       await Task.Run(() =>
@@ -34,12 +40,12 @@ namespace Bc.Development.TestRunner.ResultsWriters
 
     private void WriteAssembly(XmlTextWriter xw, CommandLineTestToolCodeunit codeunit)
     {
-      var total = codeunit.TestResults.Length;
-      var passed = codeunit.TestResults.Count(r => r.Result == TestResult.Success);
-      var failed = codeunit.TestResults.Count(r => r.Result == TestResult.Failure);
+      var total = codeunit.Methods.Count;
+      var passed = codeunit.Methods.Count(r => r.Result == TestResult.Success);
+      var failed = codeunit.Methods.Count(r => r.Result == TestResult.Failure);
 
       xw.WriteStartElement("assembly");
-      xw.WriteAttributeString("name", $"{codeunit.Codeunit} {codeunit.Name}");
+      xw.WriteAttributeString("name", $"{codeunit.CodeunitId} {codeunit.Name}");
       xw.WriteAttributeString("test-framework", "PS Test Runner");
       xw.WriteAttributeString("run-date", codeunit.StartTime.ToString("yyyy-MM-dd"));
       xw.WriteAttributeString("run-time", codeunit.StartTime.ToString("HH':'mm':'ss"));
@@ -57,7 +63,7 @@ namespace Bc.Development.TestRunner.ResultsWriters
       xw.WriteAttributeString("skipped", XmlConvert.ToString(total - passed - failed));
       xw.WriteAttributeString("time", XmlConvert.ToString(codeunit.Duration.TotalSeconds));
 
-      foreach (var result in codeunit.TestResults)
+      foreach (var result in codeunit.Methods)
       {
         WriteResult(xw, codeunit, result);
       }
@@ -66,15 +72,15 @@ namespace Bc.Development.TestRunner.ResultsWriters
       xw.WriteEndElement(); // assembly
     }
 
-    private void WriteResult(XmlTextWriter xw, CommandLineTestToolCodeunit codeunit, CommandLineTestToolMethod method)
+    private static void WriteResult(XmlTextWriter xw, CommandLineTestToolCodeunit codeunit, CommandLineTestToolMethod method)
     {
       var resultString = "Skipped";
       if (method.Result == TestResult.Success) resultString = "Pass";
       if (method.Result == TestResult.Failure) resultString = "Fail";
 
       xw.WriteStartElement("test");
-      xw.WriteAttributeString("name", $"{codeunit.Name}:{method.Method}");
-      xw.WriteAttributeString("method", method.Method);
+      xw.WriteAttributeString("name", $"{codeunit.Name}:{method.MethodName}");
+      xw.WriteAttributeString("method", method.MethodName);
       xw.WriteAttributeString("time", XmlConvert.ToString(method.Duration.TotalSeconds));
       xw.WriteAttributeString("result", resultString);
       xw.WriteEndElement(); // test
