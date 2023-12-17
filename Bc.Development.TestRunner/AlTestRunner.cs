@@ -19,7 +19,7 @@ namespace Bc.Development.TestRunner
     public int TestPageId { get; set; } = 130455;
 
 
-    private readonly ClientSession _session;
+    private readonly AlTestRunnerSession _session;
 
 
     /// <summary>
@@ -44,7 +44,7 @@ namespace Bc.Development.TestRunner
     /// <param name="settings">Additional settings for the client session.</param>
     public AlTestRunner(Uri fullServiceUri, NetworkCredential credential, ClientSessionSettings settings = null)
     {
-      _session = ClientSessionFactory.CreateUserPassword(fullServiceUri, credential, settings);
+      _session = AlTestRunnerSession.CreateUserPassword(fullServiceUri, credential, settings);
     }
 
     /// <summary>
@@ -56,9 +56,9 @@ namespace Bc.Development.TestRunner
     public IEnumerable<CommandLineTestToolCodeunit> RunTests(string suiteName, Guid appId)
     {
       var page = _session.OpenForm(TestPageId);
-      page.GetControlByName("CurrentSuiteName").SaveValue(suiteName);
-      page.GetControlByName("ExtensionId").SaveValue($"{appId}");
-      page.GetActionByName("ClearTestResults").Invoke();
+      _session.SaveValue(page.GetControlByName("CurrentSuiteName"), suiteName);
+      _session.SaveValue(page.GetControlByName("ExtensionId"), $"{appId}");
+      _session.Invoke(page.GetActionByName("ClearTestResults"));
 
       return ExecuteTests(page);
     }
@@ -73,11 +73,11 @@ namespace Bc.Development.TestRunner
     public IEnumerable<CommandLineTestToolCodeunit> RunTests(string suiteName, int codeunitId, string methodName = null)
     {
       var page = _session.OpenForm(TestPageId);
-      page.GetControlByName("CurrentSuiteName").SaveValue(suiteName);
-      page.GetControlByName("TestCodeunitRangeFilter").SaveValue($"{codeunitId}");
+      _session.SaveValue(page.GetControlByName("CurrentSuiteName"), suiteName);
+      _session.SaveValue(page.GetControlByName("TestCodeunitRangeFilter"), $"{codeunitId}");
       if (!String.IsNullOrEmpty(methodName))
       {
-        page.GetControlByName("TestProcedureRangeFilter").SaveValue(methodName);
+        _session.SaveValue(page.GetControlByName("TestProcedureRangeFilter"), methodName);
       }
 
       return ExecuteTests(page);
@@ -99,11 +99,11 @@ namespace Bc.Development.TestRunner
       var page = _session.OpenForm(TestPageId);
       foreach (var entry in playlist)
       {
-        page.GetControlByName("CurrentSuiteName").SaveValue(suiteName);
-        page.GetControlByName("TestCodeunitRangeFilter").SaveValue($"{entry.CodeunitId}");
+        _session.SaveValue(page.GetControlByName("CurrentSuiteName"), suiteName);
+        _session.SaveValue(page.GetControlByName("TestCodeunitRangeFilter"), $"{entry.CodeunitId}");
         if (!String.IsNullOrEmpty(entry.MethodName))
         {
-          page.GetControlByName("TestProcedureRangeFilter").SaveValue(entry.MethodName);
+          _session.SaveValue(page.GetControlByName("TestProcedureRangeFilter"), entry.MethodName);
         }
 
         ExecuteTests(page, results, groupByCodeunit);
@@ -112,7 +112,7 @@ namespace Bc.Development.TestRunner
       return results;
     }
 
-    private static void ExecuteTests(ClientLogicalControl page, ICollection<CommandLineTestToolCodeunit> results, bool groupByCodeunit)
+    private void ExecuteTests(ClientLogicalControl page, ICollection<CommandLineTestToolCodeunit> results, bool groupByCodeunit)
     {
       var actualCodeunits = ExecuteTests(page);
       foreach (var actualCodeunit in actualCodeunits)
@@ -133,14 +133,14 @@ namespace Bc.Development.TestRunner
       }
     }
 
-    private static IEnumerable<CommandLineTestToolCodeunit> ExecuteTests(ClientLogicalControl page)
+    private IEnumerable<CommandLineTestToolCodeunit> ExecuteTests(ClientLogicalControl page)
     {
       var responses = new List<CommandLineTestToolCodeunit>();
 
-      page.GetActionByName("ClearTestResults").Invoke();
+      _session.Invoke(page.GetActionByName("ClearTestResults"));
       while (true)
       {
-        page.GetActionByName("RunNextTest").Invoke();
+        _session.Invoke(page.GetActionByName("RunNextTest"));
         var response = page.GetControlByName("TestResultJson").StringValue;
         if (response.Equals("All tests executed.", StringComparison.OrdinalIgnoreCase)) break;
         responses.Add(JsonConvert.DeserializeObject<CommandLineTestToolCodeunit>(response));
@@ -152,7 +152,7 @@ namespace Bc.Development.TestRunner
     /// <inheritdoc />
     public void Dispose()
     {
-      ClientSessionFactory.Close(_session);
+      _session.CloseSession();
     }
   }
 }
