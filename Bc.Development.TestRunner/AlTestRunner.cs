@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using Bc.Development.Configuration;
+using Bc.Development.Util;
 using Microsoft.Dynamics.Framework.UI.Client;
 using Newtonsoft.Json;
 

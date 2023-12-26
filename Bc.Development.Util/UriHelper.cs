@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Bc.Development.Configuration
+namespace Bc.Development.Util
 {
   /// <summary>
   /// URI helper methods.

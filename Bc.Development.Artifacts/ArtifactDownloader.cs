@@ -3,6 +3,8 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
+using Bc.Development.Configuration;
+using Bc.Development.Util;
 using Ionic.Zip;
 
 namespace Bc.Development.Artifacts
@@ -69,14 +71,15 @@ namespace Bc.Development.Artifacts
 
     private static async Task<BcArtifact> DownloadUri(Uri uri, bool force)
     {
-      var semaphoreName = $"dl-{uri.ToString().Split('?')[0].Substring(8).Replace('/', '_')}";
-      if (!Semaphore.TryOpenExisting(semaphoreName, out var semaphore))
-        semaphore = new Semaphore(1, 1, semaphoreName);
-
-      using (semaphore)
+      var config = await BcContainerHelperConfiguration.Load();
+      var lockFilePath = Path.Combine(
+        config.BcArtifactsCacheFolder,
+        $"dl-{uri.ToString().Split('?')[0].Substring(8).Replace('/', '_')}");
+      var lockFile = new LockFile(lockFilePath);
+      using (lockFile)
         try
         {
-          semaphore.WaitOne();
+          await lockFile.Wait();
 
           var af = BcArtifact.FromUri(uri);
           var folder = await af.GetLocalFolder();
@@ -85,7 +88,7 @@ namespace Bc.Development.Artifacts
 
           if (!folder.Exists)
           {
-            var tempFolder = await DownloadUriToTempFolder(uri, folder.FullName);
+            var tempFolder = await DownloadUriToTempFolder(uri, folder);
             Directory.Move(tempFolder, folder.FullName);
           }
 
@@ -94,11 +97,11 @@ namespace Bc.Development.Artifacts
         }
         finally
         {
-          semaphore.Release();
+          await lockFile.Release();
         }
     }
 
-    private static async Task<string> DownloadUriToTempFolder(Uri uri, string targetFolder)
+    private static async Task<string> DownloadUriToTempFolder(Uri uri, DirectoryInfo targetFolder)
     {
       var tempFolder = targetFolder + "_dl";
       var tempFile = new FileInfo(Path.GetTempFileName());

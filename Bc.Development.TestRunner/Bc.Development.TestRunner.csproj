@@ -29,6 +29,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Bc.Development.Artifacts\Bc.Development.Artifacts.csproj"/>
+        <ProjectReference Include="..\Bc.Development.Util\Bc.Development.Util.csproj" />
     </ItemGroup>
 
 </Project>
