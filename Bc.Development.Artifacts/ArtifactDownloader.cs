@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Bc.Development.Configuration;
 using Bc.Development.Util;
+using Hsp.Extensions.Io;
 using Ionic.Zip;
 
 namespace Bc.Development.Artifacts

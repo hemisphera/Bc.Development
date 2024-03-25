@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using Microsoft.Dynamics.Framework.UI.Client;
-using Microsoft.Dynamics.Framework.UI.Client.Interactions;
 
 namespace Bc.Development.TestRunner
 {
@@ -68,6 +67,20 @@ namespace Bc.Development.TestRunner
     public static T GetControlByType<T>(this ClientLogicalControl control)
     {
       return control.ContainedControls.OfType<T>().FirstOrDefault();
+    }
+
+    public static void ThrowIfAny(this IEnumerable<ClientValidationResultItem> items)
+    {
+      var clientValidationResultItems = items as ClientValidationResultItem[] ?? items.ToArray();
+      if (clientValidationResultItems?.Any() != true) return;
+      var sb = new StringBuilder();
+
+      foreach (var item in clientValidationResultItems)
+      {
+        sb.AppendLine(item.Description);
+      }
+
+      throw new Exception(sb.ToString());
     }
   }
 }

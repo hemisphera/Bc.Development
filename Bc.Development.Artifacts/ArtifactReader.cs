@@ -63,7 +63,11 @@ namespace Bc.Development.Artifacts
       return MakeArtifactUri(Account, ArtifactType, version, country);
     }
 
-    private async Task<BcArtifact[]> GetAllRemote()
+    /// <summary>
+    /// List all remote artifacts.
+    /// </summary>
+    /// <returns>The artifacts.</returns>
+    public async Task<BcArtifact[]> GetAllRemote()
     {
       var accountUri = GetAccountUri();
       var blobclient = new BlobContainerClient(accountUri);
