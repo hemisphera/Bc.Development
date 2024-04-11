@@ -1,11 +1,43 @@
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using Bc.Development.Artifacts;
 using Bc.Development.Configuration;
+using Xunit.Abstractions;
 
 namespace Bc.Development.Sdk.Tests;
 
 public class Artifacts
 {
+  private readonly ITestOutputHelper _output;
+
+  public Artifacts(ITestOutputHelper output)
+  {
+    _output = output;
+  }
+  
+  [Fact]
+  public async Task Reader()
+  {
+    foreach (var i in Enumerable.Range(0, 3))
+    {
+      var sw = Stopwatch.StartNew();
+      var ar = new ArtifactReader(ArtifactType.OnPrem);
+      var artifacts = await ar.GetAllRemote();
+      _output.WriteLine(sw.Elapsed.ToString());
+    }
+  }
+  
+  [Theory]
+  [InlineData("https://bcartifacts-exdbf9fwegejdqak.b02.azurefd.net/onprem/24.0.16410.18056/w1")]
+  [InlineData("https://bcartifacts.azureedge.net/onprem/24.0.16410.18056/w1")]
+  public void FromUri(string uri)
+  {
+    var af = BcArtifact.FromUri(new Uri(uri));
+    Assert.Equal(ArtifactStorageAccount.BcArtifacts, af.StorageAccount);
+    Assert.Equal("w1", af.Country, StringComparer.OrdinalIgnoreCase);
+    Assert.Equal(Version.Parse("24.0.16410.18056"), af.Version);
+    Assert.Equal(ArtifactType.OnPrem, af.Type);
+  }
+  
   [Fact]
   public async Task GetLocalFolder()
   {

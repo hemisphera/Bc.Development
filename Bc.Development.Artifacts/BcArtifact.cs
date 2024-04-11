@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Bc.Development.Configuration;
 
@@ -45,17 +46,27 @@ namespace Bc.Development.Artifacts
     /// <returns>The artifact.</returns>
     public static BcArtifact FromUri(Uri artifactUri)
     {
-      var parts = $"{artifactUri}".Split('/');
-      var accountType = parts[2].Split('.')[0];
-
-      return new BcArtifact
+      try
       {
-        StorageAccount = (ArtifactStorageAccount?)(String.IsNullOrEmpty(accountType) ? null : Enum.Parse(typeof(ArtifactStorageAccount), accountType, true)),
-        Type = (ArtifactType)Enum.Parse(typeof(ArtifactType), parts[3], true),
-        Version = new Version(parts[4]),
-        Country = parts[5],
-        Uri = artifactUri
-      };
+        var host = artifactUri.Host;
+        var accountType = host.Split('.')[0];
+        if (host.EndsWith(".azurefd.net", StringComparison.OrdinalIgnoreCase))
+          accountType = accountType.Split('-')[0];
+        var pathParts = artifactUri.AbsolutePath.Split('/').SkipWhile(string.IsNullOrEmpty).ToArray();
+
+        return new BcArtifact
+        {
+          StorageAccount = (ArtifactStorageAccount?)(string.IsNullOrEmpty(accountType) ? null : Enum.Parse(typeof(ArtifactStorageAccount), accountType, true)),
+          Type = (ArtifactType)Enum.Parse(typeof(ArtifactType), pathParts[0], true),
+          Version = new Version(pathParts[1]),
+          Country = pathParts[2],
+          Uri = artifactUri
+        };
+      }
+      catch (Exception e)
+      {
+        throw new ArgumentException($"The supplied URI '{artifactUri}' is not a valid artifact URI.", e);
+      }
     }
 
     /// <summary>
