@@ -39,7 +39,7 @@ namespace Bc.Development.DevOps
     public VstsSessionTokenClient(Uri vstsUri, IVstsSessionTokenCache tokenCache = null, string scope = null)
     {
       VstsUri = vstsUri;
-      Scope = String.IsNullOrEmpty(scope) ? DefaultTokenScope : scope;
+      Scope = string.IsNullOrEmpty(scope) ? DefaultTokenScope : scope;
       _itemCache = tokenCache ?? new MemoryVstsSessionTokenCache();
     }
 
