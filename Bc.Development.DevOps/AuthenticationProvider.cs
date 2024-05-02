@@ -53,6 +53,11 @@ namespace Bc.Development.DevOps
     /// </summary>
     public IVstsSessionTokenCache SessionTokenCache { get; set; }
 
+    /// <summary>
+    /// Specifies the token validity for new session tokens.
+    /// </summary>
+    public TimeSpan? SessionTokenValidity { get; set; }
+
 
     /// <summary>
     /// </summary>
@@ -76,7 +81,7 @@ namespace Bc.Development.DevOps
         return CredentialResponse.Create(
           new NetworkCredential(
             "DevOpsToken",
-            await GetDevOpsAccessToken()
+            await GetDevOpsSystemAccessToken()
           ));
       }
 
@@ -124,11 +129,12 @@ namespace Bc.Development.DevOps
       if (string.IsNullOrEmpty(accessToken)) return null;
 
       var sessionTokenClient = new VstsSessionTokenClient(EndpointUri, SessionTokenCache);
-      var sessionToken = await sessionTokenClient.GetSessionToken(accessToken);
+      var validity = SessionTokenValidity != null ? DateTime.Now.Add(SessionTokenValidity.Value) : (DateTime?)null;
+      var sessionToken = await sessionTokenClient.GetSessionToken(accessToken, validity);
       return new NetworkCredential("vsts", sessionToken.Token);
     }
 
-    private async Task<string> GetDevOpsAccessToken()
+    private async Task<string> GetDevOpsSystemAccessToken()
     {
       // try to use the token that was specified as the password, if any
       var accessToken = ConfiguredCredential?.Password;
