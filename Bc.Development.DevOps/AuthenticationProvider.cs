@@ -15,6 +15,16 @@ namespace Bc.Development.DevOps
     public Uri EndpointUri { get; }
 
     /// <summary>
+    /// Specifies whether interactive authentication is allowed.
+    /// </summary>
+    public bool AllowUi { get; set; }
+
+    /// <summary>
+    /// Specifies if the embedded web view should be used for interactive authentication.
+    /// </summary>
+    public bool UseEmbeddedWebView { get; set; }
+
+    /// <summary>
     /// Allows specifying a pre-configured credential.
     /// This has only effect if the authentication type is <see cref="DevOps.AuthenticationType.Credentials"/>.
     /// </summary>
@@ -89,26 +99,29 @@ namespace Bc.Development.DevOps
       return CredentialResponse.CreateFailure();
     }
 
+    private async Task<string> GetAccessToken()
+    {
+      if (AuthenticationType == AuthenticationType.BearerToken)
+      {
+        return ConfiguredCredential?.Password;
+      }
+
+      if (AuthenticationType == AuthenticationType.Msal)
+      {
+        var ah = new DevOpsAuthClient(AccessTokenCachePath)
+        {
+          UseEmbeddedWebView = UseEmbeddedWebView
+        };
+        return await ah.AcquireToken(EndpointUri, AllowUi);
+      }
+
+      return string.Empty;
+    }
 
     private async Task<NetworkCredential> AcquireSessionToken()
     {
-      string accessToken;
-      switch (AuthenticationType)
-      {
-        case AuthenticationType.BearerToken:
-          accessToken = ConfiguredCredential?.Password;
-          break;
-        case AuthenticationType.Msal:
-        {
-          var ah = new DevOpsAuthClient(AccessTokenCachePath);
-          accessToken = AuthenticationType == AuthenticationType.Msal
-            ? await ah.AcquireTokenWithUi(EndpointUri)
-            : ConfiguredCredential?.Password;
-          break;
-        }
-        default:
-          return null;
-      }
+      var accessToken = await GetAccessToken();
+      if (string.IsNullOrEmpty(accessToken)) return null;
 
       var sessionTokenClient = new VstsSessionTokenClient(EndpointUri, SessionTokenCache);
       var sessionToken = await sessionTokenClient.GetSessionToken(accessToken);

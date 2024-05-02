@@ -29,6 +29,11 @@ namespace Bc.Development.DevOps
 
     private readonly bool _clientDisposable;
 
+    /// <summary>
+    /// Specifies if the embedded web view should be used for interactive authentication.
+    /// </summary>
+    public bool UseEmbeddedWebView { get; set; } = false;
+
 
     /// <summary>
     /// </summary>
@@ -65,7 +70,7 @@ namespace Bc.Development.DevOps
 
     private async Task<MsalCacheHelper> GetMsalCacheHelperAsync(string tokenCachePath = null)
     {
-      if (String.IsNullOrEmpty(tokenCachePath)) return null;
+      if (string.IsNullOrEmpty(tokenCachePath)) return null;
 
       if (Directory.Exists(tokenCachePath))
       {
@@ -81,7 +86,8 @@ namespace Bc.Development.DevOps
         {
           var tokenCacheFolder = Path.GetDirectoryName(tokenCachePath);
           var tokenCacheFilename = Path.GetFileName(tokenCachePath);
-          Directory.CreateDirectory(tokenCacheFolder);
+          if (!string.IsNullOrEmpty(tokenCacheFolder))
+            Directory.CreateDirectory(tokenCacheFolder);
           var builder = new StorageCreationPropertiesBuilder(tokenCacheFilename, tokenCacheFolder)
             .WithCacheChangedEvent(ClientId);
           var creationProps = builder.Build();
@@ -96,13 +102,15 @@ namespace Bc.Development.DevOps
       }
     }
 
-
     /// <summary>
-    /// Interactively acquires an access token for an Azure DevOps organization.
+    /// Acquires an access token for an Azure DevOps organization.
+    /// This will attempt to read the token from the cache first and if it fails, it will prompt the user for authentication (if allowed).
+    /// If the user cancels the authentication prompt, this will return null.
     /// </summary>
     /// <param name="endpointUri">The endpoint for which to get the token.</param>
+    /// <param name="allowUi">Specifies if interative authentication is allowed.</param>
     /// <returns>The access token.</returns>
-    public async Task<string> AcquireTokenWithUi(Uri endpointUri)
+    public async Task<string> AcquireToken(Uri endpointUri, bool allowUi = true)
     {
       var scopes = new[] { Resource };
       var publicClient = await CreatePca(endpointUri, _tokenCachePath);
@@ -120,12 +128,14 @@ namespace Bc.Development.DevOps
         // do nothing
       }
 
+      if (!allowUi) return null;
+
       try
       {
         var token = await publicClient
           .AcquireTokenInteractive(scopes)
           .WithPrompt(Prompt.SelectAccount)
-          .WithUseEmbeddedWebView(false)
+          .WithUseEmbeddedWebView(UseEmbeddedWebView)
           .ExecuteAsync();
         return token.AccessToken;
       }
@@ -135,6 +145,17 @@ namespace Bc.Development.DevOps
           return null;
         throw;
       }
+    }
+
+    /// <summary>
+    /// Interactively acquires an access token for an Azure DevOps organization.
+    /// </summary>
+    /// <param name="endpointUri">The endpoint for which to get the token.</param>
+    /// <returns>The access token.</returns>
+    [Obsolete("Replaced by 'AcquireToken'")]
+    public Task<string> AcquireTokenWithUi(Uri endpointUri)
+    {
+      return AcquireToken(endpointUri);
     }
 
 

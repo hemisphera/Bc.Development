@@ -15,7 +15,7 @@ namespace Bc.Development.DevOps.Caching
   {
     private readonly string _path;
 
-    private object _syncRoot = new object();
+    private readonly object _syncRoot = new object();
 
     private readonly IDataProtector _dataProtector;
 
