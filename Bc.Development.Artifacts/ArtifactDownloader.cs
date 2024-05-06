@@ -1,6 +1,7 @@
 ﻿using Azure.Storage.Blobs;
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading;
 using Bc.Development.Configuration;
@@ -49,13 +50,17 @@ namespace Bc.Development.Artifacts
     /// <param name="country">The country.</param>
     /// <param name="includePlatform">Specifies if platform artifacts should be downloaded as well.</param>
     /// <param name="force">Specifies if the artifact should be downloaded even if it already exists in the cache.</param>
+    /// <param name="useCdn">Specifies if the CDN should be used.</param>
     /// <returns>The download result.</returns>
-    public static async Task<ArtifactDownloadResult> Download(ArtifactStorageAccount account, ArtifactType type, Version version, string country, bool includePlatform = true, bool force = false)
+    public static async Task<ArtifactDownloadResult> Download(ArtifactStorageAccount account, ArtifactType type, Version version, string country, bool includePlatform = true, bool force = false, bool useCdn = true)
     {
       if (includePlatform && country.Equals(Defaults.PlatformIdentifier, StringComparison.OrdinalIgnoreCase))
         includePlatform = false;
 
-      var reader = new ArtifactReader(type, account);
+      var reader = new ArtifactReader(type, account)
+      {
+        UseCdn = useCdn
+      };
       var result = new ArtifactDownloadResult();
       await Task.WhenAll(
         Task.Run(async () => result.Artifact = await DownloadUri(reader.MakeArtifactUri(version, country), force)),
@@ -112,16 +117,17 @@ namespace Bc.Development.Artifacts
         Directory.CreateDirectory(tempFolder);
 
         using (var fs = tempFile.Create())
+        using (var cl = new HttpClient())
         {
-          var bc = new BlobClient(uri);
-          await bc.DownloadToAsync(fs);
+          var remoteStream = await cl.GetStreamAsync(uri);
+          await remoteStream.CopyToAsync(fs);
         }
 
         using (var zf = ZipFile.Read(tempFile.FullName))
         {
           foreach (var zipEntry in zf.Entries)
           {
-            if (String.IsNullOrEmpty(Path.GetExtension(zipEntry.FileName))) continue;
+            if (string.IsNullOrEmpty(Path.GetExtension(zipEntry.FileName))) continue;
             zipEntry.Extract(tempFolder, ExtractExistingFileAction.OverwriteSilently);
           }
         }

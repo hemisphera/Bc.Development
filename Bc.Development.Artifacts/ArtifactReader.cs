@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
@@ -10,10 +11,22 @@ namespace Bc.Development.Artifacts
   /// </summary>
   public class ArtifactReader
   {
+    private static readonly Dictionary<ArtifactStorageAccount, string> CdnMap = new Dictionary<ArtifactStorageAccount, string>
+    {
+      { ArtifactStorageAccount.BcArtifacts, "exdbf9fwegejdqak.b02.azurefd.net" },
+      { ArtifactStorageAccount.BcPublicPreview, "f2ajahg0e2cudpgh.b02.azurefd.net" },
+      { ArtifactStorageAccount.BcInsider, "fvh2ekdjecfjd6gk.b02.azurefd.net" }
+    };
+
     /// <summary>
     /// The storage account to read from.
     /// </summary>
     public ArtifactStorageAccount Account { get; set; }
+
+    /// <summary>
+    /// Specify whether to use the CDN.
+    /// </summary>
+    public bool UseCdn { get; set; }
 
     /// <summary>
     /// The artifact type to read.
@@ -44,10 +57,11 @@ namespace Bc.Development.Artifacts
     /// <param name="artifactType">The artifact type.</param>
     /// <param name="version">The full artifact version.</param>
     /// <param name="country">The country.</param>
+    /// <param name="useCdn">Specfiy whether to use the CDN.</param>
     /// <returns>The artifact URI.</returns>
-    public static Uri MakeArtifactUri(ArtifactStorageAccount account, ArtifactType artifactType, Version version, string country)
+    public static Uri MakeArtifactUri(ArtifactStorageAccount account, ArtifactType artifactType, Version version, string country, bool useCdn = false)
     {
-      var ub = new UriBuilder(GetAccountUri(account, artifactType));
+      var ub = new UriBuilder(GetAccountUri(account, artifactType, useCdn));
       ub.Path += $"/{version}/{country}";
       return ub.Uri;
     }
@@ -60,7 +74,7 @@ namespace Bc.Development.Artifacts
     /// <returns>The artifact URI.</returns>
     public Uri MakeArtifactUri(Version version, string country)
     {
-      return MakeArtifactUri(Account, ArtifactType, version, country);
+      return MakeArtifactUri(Account, ArtifactType, version, country, UseCdn);
     }
 
     /// <summary>
@@ -69,7 +83,7 @@ namespace Bc.Development.Artifacts
     /// <returns>The artifacts.</returns>
     public async Task<BcArtifact[]> GetAllRemote()
     {
-      var accountUri = GetAccountUri();
+      var accountUri = GetBlobAccountUri();
       var blobclient = new BlobContainerClient(accountUri);
       return await blobclient.GetBlobsAsync()
         .Select(a =>
@@ -78,6 +92,12 @@ namespace Bc.Development.Artifacts
           var uri = new Uri($"{MakeArtifactUri(new Version(parts[0]), parts[1])}");
           return BcArtifact.FromUri(uri);
         }).ToArrayAsync();
+    }
+
+    private Uri GetBlobAccountUri()
+    {
+      // don't use CDN for BLOB client access
+      return GetAccountUri(Account, ArtifactType, false);
     }
 
     private static async Task<BcArtifact[]> GetAllLocal()
@@ -187,15 +207,23 @@ namespace Bc.Development.Artifacts
       return current.Version;
     }
 
+    private static string MakeHost(ArtifactStorageAccount account, bool useCdn)
+    {
+      return !useCdn
+        ? $"{account}.blob.core.windows.net"
+        : $"{account}-{CdnMap[account]}";
+    }
+
     /// <summary>
     /// Gets the base URI for the account and artifact type.
     /// </summary>
     /// <param name="account">The storage account.</param>
     /// <param name="artifactType">The artifact type.</param>
+    /// <param name="useCdn">Specfiy whether to use the CDN.</param>
     /// <returns>The base URI.</returns>
-    public static Uri GetAccountUri(ArtifactStorageAccount account, ArtifactType artifactType)
+    public static Uri GetAccountUri(ArtifactStorageAccount account, ArtifactType artifactType, bool useCdn = false)
     {
-      return new Uri($"https://{account}.blob.core.windows.net/{artifactType}".ToLowerInvariant());
+      return new Uri($"https://{MakeHost(account, useCdn)}/{artifactType}".ToLowerInvariant());
     }
 
     /// <summary>
