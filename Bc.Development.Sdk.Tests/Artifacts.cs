@@ -13,7 +13,7 @@ public class Artifacts
   {
     _output = output;
   }
-  
+
   [Fact]
   public async Task Reader()
   {
@@ -25,7 +25,7 @@ public class Artifacts
       _output.WriteLine(sw.Elapsed.ToString());
     }
   }
-  
+
   [Theory]
   [InlineData("https://bcartifacts-exdbf9fwegejdqak.b02.azurefd.net/onprem/24.0.16410.18056/w1")]
   [InlineData("https://bcartifacts.azureedge.net/onprem/24.0.16410.18056/w1")]
@@ -37,7 +37,19 @@ public class Artifacts
     Assert.Equal(Version.Parse("24.0.16410.18056"), af.Version);
     Assert.Equal(ArtifactType.OnPrem, af.Type);
   }
-  
+
+  [Theory]
+  [InlineData("w1", "24.0", false)]
+  [InlineData("w1", "24.0", true)]
+  public async Task CreateArtifactUri(string country, string version, bool useCdn)
+  {
+    var reader = new ArtifactReader(ArtifactType.OnPrem)
+    {
+      UseCdn = useCdn
+    };
+    var af = await reader.GetLatest(version, country);
+  }
+
   [Fact]
   public async Task GetLocalFolder()
   {
