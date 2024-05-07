@@ -63,8 +63,6 @@ namespace Bc.Development.Containers
     }
 
 
-
-
     private static IEnumerable<string> ParseCommand(string command)
     {
       var builder = new StringBuilder();
@@ -121,13 +119,7 @@ namespace Bc.Development.Containers
 
     public async Task<DirectoryInfo> GetSharedFolder()
     {
-      var config = await BcContainerHelperConfiguration.Load();
-      return new DirectoryInfo(
-        Path.Combine(
-          config.HostHelperFolder,
-          "Extensions",
-          Identity.Name,
-          "my"));
+      return await FolderExtensions.GetSharedFolder(Identity.Name);
     }
 
     public async Task<ContainerInspectResponse> Inspect()
