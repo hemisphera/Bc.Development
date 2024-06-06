@@ -93,7 +93,8 @@ namespace Bc.Development.DevOps
 
       if (AuthenticationType == AuthenticationType.Credentials)
       {
-        if (ConfiguredCredential != null) CredentialResponse.Create(ConfiguredCredential);
+        if (ConfiguredCredential != null) 
+          return CredentialResponse.Create(ConfiguredCredential);
         if (PromptCallback != null)
           return await PromptCallback(this);
       }
