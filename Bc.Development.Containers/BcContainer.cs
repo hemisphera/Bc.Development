@@ -126,7 +126,7 @@ namespace Bc.Development.Containers
     {
       try
       {
-        var cl = DockerClientFactory.GetClient();
+        var cl = DockerClientFactory.Default.GetClient();
         return await cl.Containers.InspectContainerAsync(Identity.Id);
       }
       catch
@@ -145,7 +145,7 @@ namespace Bc.Development.Containers
 
     public async Task<long> RunCommand(string command, Stream standardOutput = null, Stream standardError = null, CancellationToken cancellationToken = default)
     {
-      var client = DockerClientFactory.GetClient();
+      var client = DockerClientFactory.Default.GetClient();
       var execCreateResponse = await client.Exec.ExecCreateContainerAsync(Identity.Id, new ContainerExecCreateParameters
       {
         AttachStderr = standardError != Stream.Null,

@@ -88,7 +88,7 @@ namespace Bc.Development.Containers
       try
       {
         AssertResolved();
-        var cl = DockerClientFactory.GetClient();
+        var cl = DockerClientFactory.Default.GetClient();
         return await cl.Containers.InspectContainerAsync(Id);
       }
       catch
@@ -102,7 +102,7 @@ namespace Bc.Development.Containers
     {
       try
       {
-        var cl = DockerClientFactory.GetClient();
+        var cl = DockerClientFactory.Default.GetClient();
         var info = await cl.Containers.InspectContainerAsync(containerId);
         return info.Name.StartsWith("/") ? info.Name.Substring(1) : info.Name;
       }
@@ -134,7 +134,7 @@ namespace Bc.Development.Containers
     {
       try
       {
-        var cl = DockerClientFactory.GetClient();
+        var cl = DockerClientFactory.Default.GetClient();
         var containers = await cl.Containers.ListContainersAsync(new ContainersListParameters { All = true });
         return containers.Where(c => c.Labels.ContainsKey("nav")).ToArray();
       }

@@ -4,15 +4,24 @@ using Docker.DotNet;
 
 namespace Bc.Development.Containers
 {
-  internal static class DockerClientFactory
+  public class DockerClientFactory
   {
-    public static DockerClient GetClient()
+    public static DockerClientFactory Default { get; set; } = new DockerClientFactory();
+
+    public Uri HostUri { get; set; }
+
+
+    public DockerClient GetClient(DockerClientConfiguration config = null)
     {
-      return new DockerClientConfiguration(GetDockerHostUrl()).CreateClient();
+      if (config == null)
+        config = new DockerClientConfiguration(GetDockerHostUrl());
+      return config.CreateClient();
     }
 
-    public static Uri GetDockerHostUrl()
+    public Uri GetDockerHostUrl()
     {
+      if (HostUri != null) return HostUri;
+
       var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
       var dockerHostUrl = isWindows ? new Uri("npipe://./pipe/docker_engine") : new Uri("unix:/var/run/docker.sock");
 
