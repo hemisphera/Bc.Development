@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Bc.Development.Util
@@ -28,6 +29,35 @@ namespace Bc.Development.Util
       return item ?? throw new KeyNotFoundException($"No endpoint configuration found for URI '{uri}'.");
     }
 
+    public static string Encode(NugetExternalFeedEndpoint endpoints)
+    {
+      return Encode(new[] { endpoints });
+    }
+
+    public static string Encode(IEnumerable<NugetExternalFeedEndpoint> endpoints)
+    {
+      var arr = new JArray();
+      var result = new JObject(
+        new JProperty("endpointCredentials", arr)
+      );
+      foreach (var endpoint in endpoints)
+      {
+        var endpointObject = new JObject
+        {
+          ["endpoint"] = endpoint.Endpoint
+        };
+        if (endpoint.Credential != null)
+        {
+          endpointObject["username"] = endpoint.Credential.UserName;
+          endpointObject["password"] = endpoint.Credential.Password;
+        }
+
+        arr.Add(endpointObject);
+      }
+
+      return result.ToString(Formatting.None);
+    }
+
     /// <summary>
     /// Loads all endpoint configurations from the given JSON string.
     /// </summary>
@@ -42,9 +72,9 @@ namespace Bc.Development.Util
         authString = Environment.GetEnvironmentVariable("VSS_NUGET_EXTERNAL_FEED_ENDPOINTS");
       try
       {
-        var ja = JObject.Parse(authString);
+        var jo = JObject.Parse(authString);
         var endpoints = new List<NugetExternalFeedEndpoint>();
-        foreach (var endpoint in ja["endpointCredentials"])
+        foreach (var endpoint in jo["endpointCredentials"])
         {
           var endpointUri = endpoint.Value<string>("endpoint");
           var username = endpoint.Value<string>("username");
@@ -74,7 +104,7 @@ namespace Bc.Development.Util
     public NetworkCredential Credential { get; }
 
 
-    private NugetExternalFeedEndpoint(string endpoint, NetworkCredential cred)
+    public NugetExternalFeedEndpoint(string endpoint, NetworkCredential cred)
     {
       Endpoint = endpoint;
       Credential = cred;

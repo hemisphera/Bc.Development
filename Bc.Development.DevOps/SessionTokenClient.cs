@@ -97,7 +97,7 @@ namespace Bc.Development.DevOps
     {
       var sha1 = new SHA1Managed();
       var bytes = sha1.ComputeHash(Encoding.UTF8.GetBytes(accessToken));
-      return String.Join("", bytes.Select(b => b.ToString("x2")));
+      return string.Join("", bytes.Select(b => b.ToString("x2")));
     }
 
     private async Task<VstsSessionToken> CreateSessionTokenInternal(
@@ -106,7 +106,7 @@ namespace Bc.Development.DevOps
     {
       var endTime = validTo ?? DateTime.UtcNow + TimeSpan.FromHours(2);
 
-      var spsEndpoint = await Helpers.GetAuthorizationEndpoint(VstsUri);
+      var spsEndpoint = await VstsUri.GetAuthorizationEndpoint();
       if (spsEndpoint == null)
         return null;
 
