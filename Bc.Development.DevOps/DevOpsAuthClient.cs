@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Identity.Client;
+using Microsoft.Identity.Client.Desktop;
 using Microsoft.Identity.Client.Extensions.Msal;
 
 namespace Bc.Development.DevOps
@@ -59,11 +60,14 @@ namespace Bc.Development.DevOps
     {
       var authority = await endpointUri.GetAadAuthorityUriAsync();
       var helper = await GetMsalCacheHelperAsync(tokenCachePath);
-      var client = PublicClientApplicationBuilder
+      var pcab = PublicClientApplicationBuilder
         .Create(ClientId)
         .WithAuthority(authority)
-        .WithRedirectUri("http://localhost")
-        .Build();
+        .WithRedirectUri("http://localhost");
+      if (UseEmbeddedWebView)
+        pcab = pcab.WithWindowsEmbeddedBrowserSupport();
+
+      var client = pcab.Build();
       helper?.RegisterCache(client.UserTokenCache);
       return client;
     }
