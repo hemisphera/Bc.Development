@@ -37,7 +37,6 @@ namespace Bc.Development.TestRunner
       httpClient.Timeout = settings.ClientTimeout;
     }
 
-    private static readonly TimeSpan AwaitStateTimeout = TimeSpan.FromSeconds(20);
 
     public const string ErrorControlIdentifier = "00000000-0000-0000-0800-0000836bd2d2";
 
@@ -107,7 +106,7 @@ namespace Bc.Development.TestRunner
             throw new Exception("Session timed out.");
         }
 
-        if (sw.Elapsed > AwaitStateTimeout)
+        if (sw.Elapsed > _settings.AwaitStatusTimeout)
           throw new TimeoutException($"Timeout waiting for state '{targetState}'");
       }
     }

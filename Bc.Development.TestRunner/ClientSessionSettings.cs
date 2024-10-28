@@ -107,6 +107,11 @@ namespace Bc.Development.TestRunner
     /// <summary>
     /// Specifies the timeout for the client session.
     /// </summary>
-    public TimeSpan ClientTimeout { get; set; } = TimeSpan.FromSeconds(30);
+    public TimeSpan ClientTimeout { get; set; } = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// Specifies the timeout for the awaiting a session state after a command invocation.
+    /// </summary>
+    public TimeSpan AwaitStatusTimeout { get; set; } = TimeSpan.FromMinutes(1);
   }
 }
