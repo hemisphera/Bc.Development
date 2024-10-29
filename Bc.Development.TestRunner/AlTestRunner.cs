@@ -184,13 +184,21 @@ namespace Bc.Development.TestRunner
           : null;
         if (foundCodeunit == null)
         {
-          foundCodeunit = new CommandLineTestToolCodeunit();
+          foundCodeunit = new CommandLineTestToolCodeunit
+          {
+            CodeunitId = actualCodeunit.CodeunitId,
+            Name = actualCodeunit.Name
+          };
           results.Add(foundCodeunit);
         }
 
         foreach (var method in actualCodeunit.Methods)
         {
           foundCodeunit.Methods.Add(method);
+          if (foundCodeunit.StartTime == default || method.StartTime < foundCodeunit.StartTime)
+            foundCodeunit.StartTime = method.StartTime;
+          if (foundCodeunit.FinishTime == default || method.FinishTime > foundCodeunit.FinishTime)
+            foundCodeunit.FinishTime = method.FinishTime;
         }
       }
     }
