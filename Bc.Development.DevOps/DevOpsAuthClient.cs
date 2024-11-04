@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -30,6 +31,8 @@ namespace Bc.Development.DevOps
 
     private readonly bool _clientDisposable;
 
+    private Dictionary<Uri, IPublicClientApplication> Items { get; } = new Dictionary<Uri, IPublicClientApplication>();
+
     /// <summary>
     /// Specifies if the embedded web view should be used for interactive authentication.
     /// </summary>
@@ -53,6 +56,36 @@ namespace Bc.Development.DevOps
       : this(new HttpClient(), tokenCachePath)
     {
       _clientDisposable = true;
+    }
+
+    /// <summary>
+    /// Retrieves or creates a PCA for the given Uri.
+    /// </summary>
+    /// <param name="endpointUri">The endpoint URI</param>
+    /// <param name="tokenCachePath">The Cache Folder Path</param>
+    /// <returns></returns>
+    public async Task<IPublicClientApplication> Get(Uri endpointUri, string tokenCachePath = null)
+    {
+      if (!Items.TryGetValue(endpointUri, out var pca))
+      {
+        pca = await CreatePca(endpointUri, tokenCachePath);
+        Items.Add(endpointUri, pca);
+      }
+      return pca;
+    }
+
+
+    /// <summary>
+    /// Returns the first account username, if any, in the cache for the given AAD tenant.
+    /// </summary>
+    /// <param name="endpointUri">The endpoint URI</param>
+    /// <param name="tokenCachePath">The Cache Folder Path</param>
+    /// <returns></returns>
+    public async Task<IAccount> GetAccount(Uri endpointUri, string tokenCachePath = null)
+    {
+      if (!Items.TryGetValue(endpointUri, out var pca)) return null;
+      var acc = await pca.GetAccountsAsync();
+      return acc.FirstOrDefault();
     }
 
 
