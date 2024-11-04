@@ -39,6 +39,9 @@ namespace Bc.Development.DevOps
     public bool UseEmbeddedWebView { get; set; } = false;
 
 
+    public event EventHandler<PublicClientApplicationBuilder> PublicClientApplicationBuilderCreated;
+    
+
     /// <summary>
     /// </summary>
     /// <param name="client">A HTTP Client to use for makeing requests.</param>
@@ -97,9 +100,9 @@ namespace Bc.Development.DevOps
         .Create(ClientId)
         .WithAuthority(authority)
         .WithRedirectUri("http://localhost");
-      if (UseEmbeddedWebView)
-        pcab = pcab.WithWindowsEmbeddedBrowserSupport();
 
+      PublicClientApplicationBuilderCreated?.Invoke(this, pcab);
+      
       var client = pcab.Build();
       helper?.RegisterCache(client.UserTokenCache);
       return client;
