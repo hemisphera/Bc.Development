@@ -8,11 +8,11 @@
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <DocumentationFile>bin\Debug\Bc.Development.TestRunner.xml</DocumentationFile>
+        <DocumentationFile>bin\Debug\Bc.Development.TestRunner.xml</DocumentationFile>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <DocumentationFile>bin\Release\Bc.Development.TestRunner.xml</DocumentationFile>
+        <DocumentationFile>bin\Release\Bc.Development.TestRunner.xml</DocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -29,7 +29,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Bc.Development.Artifacts\Bc.Development.Artifacts.csproj"/>
-        <ProjectReference Include="..\Bc.Development.Util\Bc.Development.Util.csproj" />
+        <ProjectReference Include="..\Bc.Development.Util\Bc.Development.Util.csproj"/>
     </ItemGroup>
 
 </Project>

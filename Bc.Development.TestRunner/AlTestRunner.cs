@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Bc.Development.Util;
 using Microsoft.Dynamics.Framework.UI.Client;
 using Newtonsoft.Json;
@@ -58,14 +59,14 @@ namespace Bc.Development.TestRunner
     /// </summary>
     /// <param name="appId">The ID of the app.</param>
     /// <returns>The test results.</returns>
-    public IEnumerable<CommandLineTestToolCodeunit> RunTests(Guid appId)
+    public async Task<IEnumerable<CommandLineTestToolCodeunit>> RunTests(Guid appId)
     {
-      var page = _session.OpenForm(TestPageId);
-      _session.SaveValue(page.GetControlByName("CurrentSuiteName"), SuiteName);
-      _session.SaveValue(page.GetControlByName("ExtensionId"), $"{appId}");
-      _session.Invoke(page.GetActionByName("ClearTestResults"));
+      var page = await _session.OpenForm(TestPageId);
+      await _session.SaveValue(page.GetControlByName("CurrentSuiteName"), SuiteName);
+      await _session.SaveValue(page.GetControlByName("ExtensionId"), $"{appId}");
+      await _session.Invoke(page.GetActionByName("ClearTestResults"));
 
-      return ExecuteTests(page);
+      return await ExecuteTests(page);
     }
 
     /// <summary>
@@ -74,17 +75,17 @@ namespace Bc.Development.TestRunner
     /// <param name="codeunitId">The ID of the test codeunit to run tests for.</param>
     /// <param name="methodName">If specified, runs only the given test method.</param>
     /// <returns>The test results.</returns>
-    public IEnumerable<CommandLineTestToolCodeunit> RunTests(int codeunitId, string methodName = null)
+    public async Task<IEnumerable<CommandLineTestToolCodeunit>> RunTests(int codeunitId, string methodName = null)
     {
-      var page = _session.OpenForm(TestPageId);
-      _session.SaveValue(page.GetControlByName("CurrentSuiteName"), SuiteName);
-      _session.SaveValue(page.GetControlByName("TestCodeunitRangeFilter"), $"{codeunitId}");
+      var page = await _session.OpenForm(TestPageId);
+      await _session.SaveValue(page.GetControlByName("CurrentSuiteName"), SuiteName);
+      await _session.SaveValue(page.GetControlByName("TestCodeunitRangeFilter"), $"{codeunitId}");
       if (!String.IsNullOrEmpty(methodName))
       {
-        _session.SaveValue(page.GetControlByName("TestProcedureRangeFilter"), methodName);
+        await _session.SaveValue(page.GetControlByName("TestProcedureRangeFilter"), methodName);
       }
 
-      return ExecuteTests(page);
+      return await ExecuteTests(page);
     }
 
     /// <summary>
@@ -96,20 +97,20 @@ namespace Bc.Development.TestRunner
     /// in the playlist (false).
     /// </param>
     /// <returns>The test results.</returns>
-    public IEnumerable<CommandLineTestToolCodeunit> RunTests(IEnumerable<TestPlaylistEntry> playlist, bool groupByCodeunit = false)
+    public async Task<IEnumerable<CommandLineTestToolCodeunit>> RunTests(IEnumerable<TestPlaylistEntry> playlist, bool groupByCodeunit = false)
     {
       var results = new List<CommandLineTestToolCodeunit>();
-      var page = _session.OpenForm(TestPageId);
+      var page = await _session.OpenForm(TestPageId);
       foreach (var entry in playlist)
       {
-        _session.SaveValue(page.GetControlByName("CurrentSuiteName"), SuiteName);
-        _session.SaveValue(page.GetControlByName("TestCodeunitRangeFilter"), $"{entry.CodeunitId}");
+        await _session.SaveValue(page.GetControlByName("CurrentSuiteName"), SuiteName);
+        await _session.SaveValue(page.GetControlByName("TestCodeunitRangeFilter"), $"{entry.CodeunitId}");
         if (!string.IsNullOrEmpty(entry.MethodName))
         {
-          _session.SaveValue(page.GetControlByName("TestProcedureRangeFilter"), entry.MethodName);
+          await _session.SaveValue(page.GetControlByName("TestProcedureRangeFilter"), entry.MethodName);
         }
 
-        ExecuteTests(page, results, groupByCodeunit);
+        await ExecuteTests(page, results, groupByCodeunit);
       }
 
       return results;
@@ -120,19 +121,19 @@ namespace Bc.Development.TestRunner
     /// </summary>
     /// <param name="codeunitFilter"></param>
     /// <returns></returns>
-    public IEnumerable<ServerTestItem> GetTests(string codeunitFilter = "")
+    public async Task<IEnumerable<ServerTestItem>> GetTests(string codeunitFilter = "")
     {
       var tests = new List<ServerTestItem>();
 
-      var page = _session.OpenForm(TestPageId);
+      var page = await _session.OpenForm(TestPageId);
       var suiteControl = page.GetControlByName("CurrentSuiteName");
-      _session.SaveValue(suiteControl, SuiteName);
-      _session.SaveValue(page.GetControlByName("TestCodeunitRangeFilter"), codeunitFilter);
-      _session.Invoke(page.GetActionByName("ClearTestResults"));
+      await _session.SaveValue(suiteControl, SuiteName);
+      await _session.SaveValue(page.GetControlByName("TestCodeunitRangeFilter"), codeunitFilter);
+      await _session.Invoke(page.GetActionByName("ClearTestResults"));
 
       var repeater = page.GetControlByType<ClientRepeaterControl>();
-      _session.SelectFirstRow(repeater);
-      _session.Refresh(repeater);
+      await _session.SelectFirstRow(repeater);
+      await _session.Refresh(repeater);
       page.ValidationResults.ThrowIfAny();
 
       var index = 0;
@@ -140,7 +141,7 @@ namespace Bc.Development.TestRunner
       while (true)
       {
         if (index >= repeater.Offset + repeater.DefaultViewport.Count)
-          _session.ScrollRepeater(repeater, 1);
+          await _session.ScrollRepeater(repeater, 1);
 
         var rowIndex = index - repeater.Offset;
         index++;
@@ -174,9 +175,9 @@ namespace Bc.Development.TestRunner
       return tests;
     }
 
-    private void ExecuteTests(ClientLogicalControl page, ICollection<CommandLineTestToolCodeunit> results, bool groupByCodeunit)
+    private async Task ExecuteTests(ClientLogicalControl page, ICollection<CommandLineTestToolCodeunit> results, bool groupByCodeunit)
     {
-      var actualCodeunits = ExecuteTests(page);
+      var actualCodeunits = await ExecuteTests(page);
       foreach (var actualCodeunit in actualCodeunits)
       {
         var foundCodeunit = groupByCodeunit
@@ -203,14 +204,14 @@ namespace Bc.Development.TestRunner
       }
     }
 
-    private IEnumerable<CommandLineTestToolCodeunit> ExecuteTests(ClientLogicalControl page)
+    private async Task<IEnumerable<CommandLineTestToolCodeunit>> ExecuteTests(ClientLogicalControl page)
     {
       var responses = new List<CommandLineTestToolCodeunit>();
 
-      _session.Invoke(page.GetActionByName("ClearTestResults"));
+      await _session.Invoke(page.GetActionByName("ClearTestResults"));
       while (true)
       {
-        _session.Invoke(page.GetActionByName("RunNextTest"));
+        await _session.Invoke(page.GetActionByName("RunNextTest"));
         var response = page.GetControlByName("TestResultJson").StringValue;
         if (response.Equals("All tests executed.", StringComparison.OrdinalIgnoreCase)) break;
         responses.Add(JsonConvert.DeserializeObject<CommandLineTestToolCodeunit>(response));

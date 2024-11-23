@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Dynamics.Framework.UI.Client;
 using Microsoft.Dynamics.Framework.UI.Client.Interactions;
 
@@ -51,7 +50,7 @@ namespace Bc.Development.TestRunner
 
     private readonly ConcurrentBag<Exception> _exceptions = new ConcurrentBag<Exception>();
 
-    private readonly Queue<Action> _callbackQueue = new Queue<Action>();
+    //private readonly Queue<Func<Task>> _callbackQueue = new Queue<Func<Task>>();
 
 
     public AlTestRunnerSession(ClientSession session, ClientSessionSettings settings)
@@ -81,7 +80,7 @@ namespace Bc.Development.TestRunner
       _session.LookupFormToShow += ClientSessionOnLookupFormToShow;
       _session.DialogToShow += ClientSessionOnDialogToShow;
       _session.FormToShow += CatchFormHandler;
-      _session.OpenSessionAsync(sessionParams);
+      _ = _session.RunMethod("OpenSessionAsync", sessionParams);
       AwaitStateReady();
     }
 
@@ -111,6 +110,12 @@ namespace Bc.Development.TestRunner
       }
     }
 
+    private async Task InvokeInteractionAsync(ClientInteraction interaction)
+    {
+      await _session.RunMethod("InvokeInteractionAsync", interaction);
+      AwaitStateReady();
+    }
+
     public void ThrowExceptions()
     {
       if (_exceptions.TryTake(out var ex))
@@ -118,22 +123,21 @@ namespace Bc.Development.TestRunner
     }
 
 
-    public ClientLogicalForm OpenForm(int pageId, string bookmark = null)
+    public async Task<ClientLogicalForm> OpenForm(int pageId, string bookmark = null)
     {
       var interaction = new OpenFormInteraction
       {
         Page = $"{pageId}"
       };
-      if (!String.IsNullOrEmpty(bookmark)) interaction.Bookmark = bookmark;
-      return InvokeInteractionAndCatchForm(interaction);
+      if (!string.IsNullOrEmpty(bookmark)) interaction.Bookmark = bookmark;
+      return await InvokeInteractionAndCatchForm(interaction);
     }
 
-    public ClientLogicalForm InvokeInteractionAndCatchForm(ClientInteraction interaction)
+    public async Task<ClientLogicalForm> InvokeInteractionAndCatchForm(ClientInteraction interaction)
     {
       _lastCaughtForm = null;
-      _session.InvokeInteractionAsync(interaction);
-      AwaitStateReady();
-      if (_lastCaughtForm == null) CloseAllWarningForms();
+      await InvokeInteractionAsync(interaction);
+      if (_lastCaughtForm == null) await CloseAllWarningForms();
       var caughForm = _lastCaughtForm;
       _lastCaughtForm = null;
       return caughForm;
@@ -176,7 +180,7 @@ namespace Bc.Development.TestRunner
 
     private static void ClientSessionOnLookupFormToShow(object sender, ClientLookupFormToShowEventArgs e)
     {
-      Console.WriteLine($"Open lookup form");
+      Console.WriteLine("Open lookup form");
     }
 
     private static void ClientSessionOnUriToShow(object sender, ClientUriToShowEventArgs e)
@@ -191,25 +195,30 @@ namespace Bc.Development.TestRunner
 
     private void ClientSessionOnDialogToShow(object sender, ClientDialogToShowEventArgs e)
     {
+      _ = ClientSessionOnDialogToShowAsync(e);
+    }
+
+    private async Task ClientSessionOnDialogToShowAsync(ClientDialogToShowEventArgs e)
+    {
       var dialog = e.DialogToShow;
       if (dialog.ControlIdentifier == ErrorControlIdentifier)
       {
-        var message = e.DialogToShow.ContainedControls.OfType<ClientStaticStringControl>().FirstOrDefault()?.StringValue;
-        _callbackQueue.Enqueue(() =>
-        {
-          Close(dialog);
-          throw new Exception(message);
-        });
+        // var message = e.DialogToShow.ContainedControls.OfType<ClientStaticStringControl>().FirstOrDefault()?.StringValue;
+        // _callbackQueue.Enqueue(async () =>
+        // {
+        //   await Close(dialog);
+        //   throw new Exception(message);
+        // });
       }
 
       if (e.DialogToShow.ControlIdentifier == WarningControlIdentifier)
       {
-        _callbackQueue.Enqueue(() => Close(dialog));
+        // _callbackQueue.Enqueue(() => Close(dialog));
         return;
       }
 
-      if ((e.DialogToShow.ControlIdentifier == "{000009ce-0000-0001-0c00-0000836bd2d2}") ||
-          (e.DialogToShow.ControlIdentifier == "{000009cd-0000-0001-0c00-0000836bd2d2}"))
+      if (e.DialogToShow.ControlIdentifier == "{000009ce-0000-0001-0c00-0000836bd2d2}" ||
+          e.DialogToShow.ControlIdentifier == "{000009cd-0000-0001-0c00-0000836bd2d2}")
       {
         _lastCaughtForm = e.DialogToShow;
         return;
@@ -217,104 +226,64 @@ namespace Bc.Development.TestRunner
 
       if (e.DialogToShow.ControlIdentifier == "8da61efd-0002-0003-0507-0b0d1113171d")
       {
-        _callbackQueue.Enqueue(() => Close(dialog));
+        // _callbackQueue.Enqueue(() => Close(dialog));
         return;
       }
 
       var action = e.DialogToShow.GetActionByName("OK");
       if (action != null)
       {
-        Invoke(action);
+        await Invoke(action);
       }
       else
       {
-        Close(e.DialogToShow);
+        await Close(e.DialogToShow);
       }
     }
 
 
-    public void Invoke(ClientActionControl action)
+    public async Task Invoke(ClientActionControl action)
     {
-      _session.InvokeInteractionAsync(new InvokeActionInteraction(action));
-      AwaitStateReady();
+      await InvokeInteractionAsync(new InvokeActionInteraction(action));
     }
 
-    public void SaveValue(ClientLogicalControl control, string newValue)
+    public async Task SaveValue(ClientLogicalControl control, string newValue)
     {
-      _session.InvokeInteractionAsync(new SaveValueInteraction(control, newValue));
-      AwaitStateReady();
+      await InvokeInteractionAsync(new SaveValueInteraction(control, newValue));
     }
 
-    public void SelectFirstRow(ClientLogicalControl control)
+    public async Task SelectFirstRow(ClientLogicalControl control)
     {
-      _session.InvokeInteractionAsync(new InvokeActionInteraction(control, SystemAction.SelectFirstRow));
-      AwaitStateReady();
+      await InvokeInteractionAsync(new InvokeActionInteraction(control, SystemAction.SelectFirstRow));
     }
 
-    public void SelectLastRow(ClientLogicalControl control)
+    public async Task Refresh(ClientLogicalControl control)
     {
-      _session.InvokeInteractionAsync(new InvokeActionInteraction(control, SystemAction.SelectLastRow));
-      AwaitStateReady();
+      await InvokeInteractionAsync(new InvokeActionInteraction(control, SystemAction.Refresh));
     }
 
-    public void Refresh(ClientLogicalControl control)
+    public async Task ScrollRepeater(ClientRepeaterControl repeater, int delta)
     {
-      _session.InvokeInteractionAsync(new InvokeActionInteraction(control, SystemAction.Refresh));
-      AwaitStateReady();
-    }
-
-    public void ScrollRepeater(ClientRepeaterControl repeater, int delta)
-    {
-      _session.InvokeInteractionAsync(new ScrollRepeaterInteraction(repeater, delta));
-      AwaitStateReady();
-    }
-
-    public void ActivateControl(ClientRepeaterControl control)
-    {
-      _session.InvokeInteractionAsync(new ActivateControlInteraction(control));
-      AwaitStateReady();
+      await InvokeInteractionAsync(new ScrollRepeaterInteraction(repeater, delta));
     }
 
 
-    public string GetErrorFromErrorForm()
+    public async Task Close(ClientLogicalForm form)
     {
-      return _session.OpenedForms
-        .FirstOrDefault(f => f.ControlIdentifier == ErrorControlIdentifier)?
-        .ContainedControls.OfType<ClientStaticStringControl>()
-        .LastOrDefault()?.StringValue;
+      await InvokeInteractionAsync(new CloseFormInteraction(form));
     }
 
-    public string GetWarningFromWarningForm()
-    {
-      return _session.OpenedForms
-        .FirstOrDefault(f => f.ControlIdentifier == WarningControlIdentifier)?
-        .ContainedControls.OfType<ClientStaticStringControl>()
-        .LastOrDefault()?.StringValue;
-    }
-
-
-    public void Close(ClientLogicalForm form)
-    {
-      _session.InvokeInteractionAsync(new CloseFormInteraction(form));
-      AwaitStateReady();
-    }
-
-    public void CloseAllForms(string identifier = null)
+    public async Task CloseAllForms(string identifier = null)
     {
       foreach (var form in _session.ListForms(identifier))
       {
-        Close(form);
+        await Close(form);
       }
     }
 
-    public void CloseAllErrorForms()
+    public async Task CloseAllWarningForms()
     {
-      CloseAllForms(ErrorControlIdentifier);
-    }
-
-    public void CloseAllWarningForms()
-    {
-      CloseAllForms(WarningControlIdentifier);
+      await CloseAllForms(WarningControlIdentifier);
     }
 
     private void ClientSessionOnInvalidCredentialsError(object sender, MessageToShowEventArgs e)
