@@ -13,12 +13,28 @@ namespace Bc.Development.TestRunner
 {
   internal class AlTestRunnerSession : IDisposable
   {
+    public static AlTestRunnerSession CreateWindows(
+      Uri serverUri, ClientSessionSettings settings = null)
+    {
+      return Create(serverUri, null, settings);
+    }
+
     public static AlTestRunnerSession CreateUserPassword(
       Uri serverUri, NetworkCredential credential,
       ClientSessionSettings settings = null)
     {
+      return Create(serverUri, credential, settings);
+    }
+
+    private static AlTestRunnerSession Create(
+      Uri serverUri, NetworkCredential credential,
+      ClientSessionSettings settings = null)
+    {
       var provider = ServiceAddressProvider.ServiceAddress(serverUri);
-      var client = new JsonHttpClient(provider, credential, AuthenticationScheme.UserNamePassword);
+      var client =
+        credential == null
+          ? new JsonHttpClient(provider)
+          : new JsonHttpClient(provider, credential, AuthenticationScheme.UserNamePassword);
       var actualSettings = settings ?? ClientSessionSettings.Default;
       ConfigureUnderlyingHttpClient(client, actualSettings);
       var session = new AlTestRunnerSession(
