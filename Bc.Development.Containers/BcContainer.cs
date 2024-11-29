@@ -13,9 +13,9 @@ namespace Bc.Development.Containers
 {
   public sealed class BcContainer
   {
-    public static async Task<BcContainer[]> Enumerate()
+    public static async Task<BcContainer[]> Enumerate(CancellationToken cancellationToken = default)
     {
-      var containers = await ContainerIdentity.EnumerateContainers();
+      var containers = await ContainerIdentity.EnumerateContainers(cancellationToken);
       var bccs = await Task.WhenAll(containers.Select(async container => await TryGet(await ContainerIdentity.FromId(container.ID))));
       return bccs.Where(bcc => bcc != null).ToArray();
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Docker.DotNet.Models;
 
@@ -130,12 +131,12 @@ namespace Bc.Development.Containers
       return id;
     }
 
-    public static async Task<ContainerListResponse[]> EnumerateContainers()
+    public static async Task<ContainerListResponse[]> EnumerateContainers(CancellationToken cancellationToken = default)
     {
       try
       {
         var cl = DockerClientFactory.Default.GetClient();
-        var containers = await cl.Containers.ListContainersAsync(new ContainersListParameters { All = true });
+        var containers = await cl.Containers.ListContainersAsync(new ContainersListParameters { All = true }, cancellationToken);
         return containers.Where(c => c.Labels.ContainsKey("nav") || c.Image.Contains("businesscentral")).ToArray();
       }
       catch
