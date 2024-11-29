@@ -136,7 +136,7 @@ namespace Bc.Development.Containers
       {
         var cl = DockerClientFactory.Default.GetClient();
         var containers = await cl.Containers.ListContainersAsync(new ContainersListParameters { All = true });
-        return containers.Where(c => c.Labels.ContainsKey("nav")).ToArray();
+        return containers.Where(c => c.Labels.ContainsKey("nav") || c.Image.Contains("businesscentral")).ToArray();
       }
       catch
       {
