@@ -56,9 +56,10 @@ namespace Bc.Development.Containers
 
     private async Task Load()
     {
-      var ir = await Inspect();
-      Country = ir.Config.Labels["country"];
-      if (Version.TryParse(ir.Config.Labels["version"], out var ver))
+      var ir = await Identity.Inspect();
+      var artifactUrl = ir.Config.Env.First(o => o.IndexOf("artifacturl=", StringComparison.InvariantCultureIgnoreCase) >= 0).Split('=')[1];
+      Country = artifactUrl.Split('/')[5];
+      if (Version.TryParse(artifactUrl.Split('/')[4], out var ver))
         Version = ver;
     }
 
@@ -122,19 +123,10 @@ namespace Bc.Development.Containers
       return await FolderExtensions.GetSharedFolder(Identity.Name);
     }
 
+    [Obsolete("Use implementation from ContainerIdentity")]
     public async Task<ContainerInspectResponse> Inspect()
     {
-      try
-      {
-        var cl = DockerClientFactory.Default.GetClient();
-        return await cl.Containers.InspectContainerAsync(Identity.Id);
-      }
-      catch
-      {
-        // ignore
-      }
-
-      return null;
+      return await Identity.Inspect();
     }
 
 
@@ -171,5 +163,6 @@ namespace Bc.Development.Containers
 
       return execInspectResponse.ExitCode;
     }
+
   }
 }
