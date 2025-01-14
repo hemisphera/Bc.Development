@@ -18,6 +18,16 @@
     /// <summary>
     /// .NET on Windows
     /// </summary>
-    DotNetWindows
+    DotNetWindows,
+
+    /// <summary>
+    /// MacOS / Darwin
+    /// </summary>
+    DotNetDarwin,
+
+    /// <summary>
+    /// Linux
+    /// </summary>
+    DotNetLinux
   }
 }

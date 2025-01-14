@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Ionic.Zip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ArgumentException = System.ArgumentException;
 
 namespace Bc.Development.Configuration
 {
@@ -19,26 +20,34 @@ namespace Bc.Development.Configuration
     /// <summary>
     /// The version of the extension.
     /// </summary>
-    public Version Version { get; private set; }
+    public Version Version { get; }
 
     /// <summary>
     /// Indicates whether this is a prerelease version.
     /// </summary>
-    public bool PreRelease { get; private set; }
+    public bool PreRelease { get; }
 
     /// <summary>
     /// Indicates when this version was last updated.
     /// </summary>
-    public DateTime LastUpdated { get; private set; }
+    public DateTime LastUpdated { get; }
 
     /// <summary>
     /// The URI to download this version.
     /// </summary>
-    public Uri Uri { get; private set; }
+    public Uri? Uri { get; }
 
 
-    private RemoteAlLanguageExtension()
+    private RemoteAlLanguageExtension(JObject jo)
     {
+      var uri = (jo["files"] as JArray)?.FirstOrDefault()?.Value<string>("source");
+
+      Version = Version.Parse(jo.Value<string>("version") ?? throw new ArgumentException("Version is missing"));
+      LastUpdated = jo.Value<DateTime>("lastUpdated");
+      Uri = string.IsNullOrEmpty(uri) ? null : new Uri(uri);
+      PreRelease = (jo["properties"] as JArray)?
+        .FirstOrDefault(f => f.Value<string>("key")?.Equals("Microsoft.VisualStudio.Code.PreRelease", StringComparison.OrdinalIgnoreCase) == true)
+        ?.Value<bool>("value") ?? false;
     }
 
 
@@ -54,23 +63,23 @@ namespace Bc.Development.Configuration
       var idx = await GetIndex(marketplaceUri);
       var versions = idx.SelectToken("results[0].extensions[0].versions") as JArray;
       return versions?
-        .Select(a => FromJToken(a as JObject)).Where(i => i != null)
+        .Select(FromJToken)
+        .OfType<RemoteAlLanguageExtension>()
         .Where(a => includePreRelease || !a.PreRelease)
         .ToArray() ?? Array.Empty<RemoteAlLanguageExtension>();
     }
 
-    private static RemoteAlLanguageExtension FromJToken(JObject jo)
+    private static RemoteAlLanguageExtension? FromJToken(JToken tk)
     {
-      var uri = (jo["files"] as JArray)?.FirstOrDefault()?.Value<string>("source");
-      return new RemoteAlLanguageExtension
+      try
       {
-        Version = System.Version.Parse(jo.Value<string>("version")),
-        LastUpdated = jo.Value<DateTime>("lastUpdated"),
-        Uri = String.IsNullOrEmpty(uri) ? null : new Uri(uri),
-        PreRelease = (jo["properties"] as JArray)?
-          .FirstOrDefault(f => f.Value<string>("key").Equals("Microsoft.VisualStudio.Code.PreRelease", StringComparison.OrdinalIgnoreCase))
-          ?.Value<bool>("value") ?? false
-      };
+        if (!(tk is JObject jo)) return null;
+        return new RemoteAlLanguageExtension(jo);
+      }
+      catch
+      {
+        return null;
+      }
     }
 
     private static async Task<JObject> GetIndex(string marketplaceUri)
@@ -156,9 +165,9 @@ namespace Bc.Development.Configuration
           {
             var parts = entry.FileName.Split('/');
             if (parts.FirstOrDefault() != "extension") continue;
-            var filePath = Path.Combine(targetFolder, String.Join("/", entry.FileName.Split('/').Skip(1)));
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-            using (var targetFile = File.Create(filePath))
+            var file = new FileInfo(Path.Combine(targetFolder, string.Join("/", entry.FileName.Split('/').Skip(1))));
+            file.Directory?.Create();
+            using (var targetFile = file.Create())
             using (var sourceFile = entry.OpenReader())
             {
               await sourceFile.CopyToAsync(targetFile);
