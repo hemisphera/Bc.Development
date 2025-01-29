@@ -15,6 +15,13 @@ namespace Bc.Development.TestRunner.ResultsWriters
       return Task.CompletedTask;
     }
 
+
+    /// <summary>
+    /// The action that writes the string. This defaults to Console.WriteLine.
+    /// </summary>
+    public Action<string> WriteAction { get; set; } = Console.WriteLine;
+
+
     /// <inheritdoc />
     public Task Write(IEnumerable<CommandLineTestToolCodeunit> codeunits)
     {
@@ -24,18 +31,18 @@ namespace Bc.Development.TestRunner.ResultsWriters
 
       foreach (var codeunit in codeunits)
       {
-        Console.WriteLine($"Codeunit {codeunit.CodeunitId} {codeunit.Name} ({codeunit.Duration.TotalSeconds}s)");
+        WriteAction($"Codeunit {codeunit.CodeunitId} {codeunit.Name} ({codeunit.Duration.TotalSeconds}s)");
         foreach (var method in codeunit.Methods)
         {
-          Console.WriteLine(l1Spacer + FormatResult(method.Result) + " Method " + method.MethodName + " (" + method.Duration.TotalSeconds + "s)");
-          if (!String.IsNullOrEmpty(method.Message))
-            Console.WriteLine(l2Spacer + method.Message);
-          if (!String.IsNullOrEmpty(method.StackTrace))
+          WriteAction(l1Spacer + FormatResult(method.Result) + " Method " + method.MethodName + " (" + method.Duration.TotalSeconds + "s)");
+          if (!string.IsNullOrEmpty(method.Message))
+            WriteAction(l2Spacer + method.Message);
+          if (!string.IsNullOrEmpty(method.StackTrace))
           {
             var lines = method.StackTrace.Split(';');
             foreach (var line in lines)
             {
-              Console.WriteLine(l3Spacer + line.Trim('\r'));
+              WriteAction(l3Spacer + line.Trim('\r'));
             }
           }
         }
