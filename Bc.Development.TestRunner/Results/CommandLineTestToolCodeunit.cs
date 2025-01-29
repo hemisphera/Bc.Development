@@ -46,6 +46,22 @@ namespace Bc.Development.TestRunner
     [JsonProperty("TestResults")]
     public List<CommandLineTestToolMethod> Methods { get; set; } = new List<CommandLineTestToolMethod>();
 
+    /// <summary>
+    /// Indicates the aggregate result of the codeunit according to it's contained methods.
+    /// </summary>
+    public TestResult Result
+    {
+      get
+      {
+        var codeunitResult = TestResult.Unknown;
+        if (Methods.All(m => m.Result == TestResult.Success))
+          codeunitResult = TestResult.Success;
+        else if (Methods.Any(m => m.Result == TestResult.Failure))
+          codeunitResult = TestResult.Failure;
+        return codeunitResult;
+      }
+    }
+
 
     /// <inheritdoc />
     public override string ToString()

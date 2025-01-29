@@ -50,6 +50,11 @@ namespace Bc.Development.TestRunner
     [JsonProperty]
     public string StackTrace { get; set; }
 
+    /// <summary>
+    /// The stack trace lines.
+    /// </summary>
+    public string[] StackTraceLines => StackTrace?.Split(';') ?? Array.Empty<string>();
+
 
     /// <inheritdoc />
     public override string ToString()
