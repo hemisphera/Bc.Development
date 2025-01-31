@@ -19,7 +19,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="DotNetZip" Version="1.16.0"/>
         <PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" Version="8.0.8"/>
         <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="8.0.8"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>

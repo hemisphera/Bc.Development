@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Ionic.Zip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ArgumentException = System.ArgumentException;
@@ -159,16 +159,16 @@ namespace Bc.Development.Configuration
       {
         await fs.CopyToAsync(ms);
         ms.Position = 0;
-        using (var zf = ZipFile.Read(ms))
+        using (var zf = new ZipArchive(ms))
         {
           foreach (var entry in zf.Entries)
           {
-            var parts = entry.FileName.Split('/');
+            var parts = entry.FullName.Split('/');
             if (parts.FirstOrDefault() != "extension") continue;
-            var file = new FileInfo(Path.Combine(targetFolder, string.Join("/", entry.FileName.Split('/').Skip(1))));
+            var file = new FileInfo(Path.Combine(targetFolder, string.Join("/", entry.FullName.Split('/').Skip(1))));
             file.Directory?.Create();
             using (var targetFile = file.Create())
-            using (var sourceFile = entry.OpenReader())
+            using (var sourceFile = entry.Open())
             {
               await sourceFile.CopyToAsync(targetFile);
               targetFile.Close();
