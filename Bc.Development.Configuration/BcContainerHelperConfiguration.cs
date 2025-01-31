@@ -12,7 +12,7 @@ namespace Bc.Development.Configuration
   [JsonObject(MemberSerialization.OptIn)]
   public class BcContainerHelperConfiguration
   {
-    private static BcContainerHelperConfiguration _instance;
+    private static BcContainerHelperConfiguration? _instance;
 
     private static readonly string FilePath = Path.Combine(
       Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
@@ -46,7 +46,7 @@ namespace Bc.Development.Configuration
     /// <summary>
     /// The folder where BC artifacts are stored
     /// </summary>
-    public string BcArtifactsCacheFolder
+    public string? BcArtifactsCacheFolder
     {
       get => GetSettingValue("bcartifactsCacheFolder", "c:\\bcartifacts.cache");
       set => SetSettingValue("bcartifactsCacheFolder", value);
@@ -55,7 +55,7 @@ namespace Bc.Development.Configuration
     /// <summary>
     /// The BcContainerHelper host helper folder.
     /// </summary>
-    public string HostHelperFolder
+    public string? HostHelperFolder
     {
       get => GetSettingValue("hostHelperFolder", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BcContainerHelper"));
       set => SetSettingValue("hostHelperFolder", value);
@@ -69,13 +69,13 @@ namespace Bc.Development.Configuration
     }
 
 
-    private T GetSettingValue<T>(string key, T defaultValue = default)
+    private string? GetSettingValue(string key, string? defaultValue = null)
     {
       var token = _innerObject[key];
-      return token == null ? defaultValue : token.Value<T>();
+      return token == null ? defaultValue : token.Value<string>();
     }
 
-    private void SetSettingValue<T>(string key, T value)
+    private void SetSettingValue(string key, string? value)
     {
       if (_innerObject.ContainsKey(key))
         _innerObject[key] = new JValue(value);

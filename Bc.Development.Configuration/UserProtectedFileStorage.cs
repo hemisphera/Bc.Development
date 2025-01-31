@@ -22,6 +22,7 @@ namespace Bc.Development.Configuration
     {
       FilePath = fileName;
       var folder = Path.GetDirectoryName(fileName);
+      if (folder == null) throw new DirectoryNotFoundException("The folder of the file could not be found.");
       fileName = Path.GetFileName(fileName);
 
       Provider = DataProtectionProvider.Create(new DirectoryInfo(folder));
@@ -40,16 +41,16 @@ namespace Bc.Development.Configuration
 
     public bool Exists() => File.Exists(FilePath);
 
-    public byte[] Read()
+    public byte[]? Read()
     {
       lock (FileLock)
         return Exists() ? Unprotect(File.ReadAllBytes(FilePath)) : null;
     }
 
-    public T Read<T>()
+    public T? Read<T>() where T : class
     {
       var bytes = Read();
-      return bytes == null ? default : JsonConvert.DeserializeObject<T>(Encoding.GetString(bytes));
+      return bytes == null ? null : JsonConvert.DeserializeObject<T>(Encoding.GetString(bytes));
     }
 
     public void Write(byte[] bytes)

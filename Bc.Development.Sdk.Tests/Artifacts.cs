@@ -68,6 +68,12 @@ public class Artifacts
   }
 
   [Fact]
+  public async Task EnumerateAlc()
+  {
+    var langs = AlLanguageExtension.Enumerate(null, "C:\\_mytemp\\alc");
+  }
+
+  [Fact]
   public async Task DownloadAlc()
   {
     var all = await RemoteAlLanguageExtension.Enumerate();
@@ -75,6 +81,7 @@ public class Artifacts
     if (latest != null)
     {
       var ext = await latest.Download("c:\\temp\\alc");
+      Assert.NotEmpty(ext);
     }
   }
 }

@@ -38,7 +38,7 @@ namespace Bc.Development.Configuration
     /// </summary>
     /// <param name="folder">The full path to folder of the AL language extension.</param>
     /// <returns>The credential reader.</returns>
-    public static CachedCredentialReader GetUserPasswordCache(string folder)
+    public static CachedCredentialReader? GetUserPasswordCache(string folder)
     {
       const string filename = "UserPasswordCache.dat";
       var fullPath = Path.Combine(folder, filename);
@@ -52,7 +52,7 @@ namespace Bc.Development.Configuration
     /// <param name="serverUri">The server URI.</param>
     /// <param name="serverInstance">The server instance.</param>
     /// <returns>The found credential, or null if none was found.</returns>
-    public static NetworkCredential GetUserPasswordCredential(Uri serverUri, string serverInstance)
+    public static NetworkCredential? GetUserPasswordCredential(Uri serverUri, string serverInstance)
     {
       var extensions = AlLanguageExtension.Enumerate();
       foreach (var extension in extensions.OrderByDescending(e => e.FileVersion))
@@ -71,7 +71,7 @@ namespace Bc.Development.Configuration
     /// <param name="serverInstance">The server instance.</param>
     /// <param name="alLanguageFolder">The folder of the AL language extension.</param>
     /// <returns>The found credential, or null if none was found.</returns>
-    public static NetworkCredential GetUserPasswordCredential(Uri serverUri, string serverInstance, string alLanguageFolder)
+    public static NetworkCredential? GetUserPasswordCredential(Uri serverUri, string serverInstance, string alLanguageFolder)
     {
       var key = GetUserPasswordCredentialKey(serverUri, serverInstance);
       var cache = GetUserPasswordCache(alLanguageFolder);
@@ -83,7 +83,7 @@ namespace Bc.Development.Configuration
     /// </summary>
     /// <param name="folder">The full path to folder of the AL language extension.</param>
     /// <returns>The credential reader.</returns>
-    public static CachedCredentialReader GetServerInfoCache(string folder)
+    public static CachedCredentialReader? GetServerInfoCache(string folder)
     {
       const string filename = "ServerInfoCache.dat";
       var fullPath = Path.Combine(folder, filename);
@@ -95,7 +95,7 @@ namespace Bc.Development.Configuration
     /// </summary>
     /// <param name="folder">The full path to folder of the AL language extension.</param>
     /// <returns>The credential reader.</returns>
-    public static CachedCredentialReader GetTokenKeyCache(string folder)
+    public static CachedCredentialReader? GetTokenKeyCache(string folder)
     {
       const string filename = "TokenKeyCache.dat";
       var fullPath = Path.Combine(folder, filename);
@@ -119,7 +119,7 @@ namespace Bc.Development.Configuration
     /// </summary>
     /// <param name="key">The key.</param>
     /// <returns>The credential or null if not found.</returns>
-    public NetworkCredential TryGetCredential(string key)
+    public NetworkCredential? TryGetCredential(string key)
     {
       var dictionary = new UserProtectedFileStorage(Filename).Read<Dictionary<string, UsernamePassword>>();
       if (dictionary == null)
@@ -134,7 +134,7 @@ namespace Bc.Development.Configuration
     public IEnumerable<string> ListKeys()
     {
       var dictionary = new UserProtectedFileStorage(Filename).Read<Dictionary<string, UsernamePassword>>();
-      return dictionary.Keys;
+      return dictionary?.Keys ?? (IEnumerable<string>)Array.Empty<string>();
     }
   }
 }
