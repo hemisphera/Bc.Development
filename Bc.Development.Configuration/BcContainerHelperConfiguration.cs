@@ -9,15 +9,17 @@ namespace Bc.Development.Configuration
   /// <summary>
   /// BcContainerHelper configuration 
   /// </summary>
-  [JsonObject(MemberSerialization.OptIn)]
   public class BcContainerHelperConfiguration
   {
     private static BcContainerHelperConfiguration? _instance;
 
-    private static readonly string FilePath = Path.Combine(
+    private static readonly string DefaultFilePath = Path.Combine(
       Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
       "BcContainerHelper",
       "BcContainerHelper.config.json");
+
+
+    private readonly FileInfo _file;
 
 
     /// <summary>
@@ -29,14 +31,7 @@ namespace Bc.Development.Configuration
     {
       if (_instance != null && !force) return _instance;
       _instance = new BcContainerHelperConfiguration();
-      if (!File.Exists(FilePath)) return _instance;
-
-      using (var fs = File.OpenText(FilePath))
-      {
-        var jsonContents = await fs.ReadToEndAsync();
-        _instance._innerObject = JObject.Parse(jsonContents);
-      }
-
+      await _instance.LoadFromFile();
       return _instance;
     }
 
@@ -64,8 +59,9 @@ namespace Bc.Development.Configuration
 
     /// <summary>
     /// </summary>
-    public BcContainerHelperConfiguration()
+    public BcContainerHelperConfiguration(string? filePath = null)
     {
+      _file = new FileInfo(filePath ?? DefaultFilePath);
     }
 
 
@@ -77,21 +73,48 @@ namespace Bc.Development.Configuration
 
     private void SetSettingValue(string key, string? value)
     {
+      var valueToken = string.IsNullOrEmpty(value) || value == null ? JValue.CreateNull() : JToken.FromObject(value);
       if (_innerObject.ContainsKey(key))
-        _innerObject[key] = new JValue(value);
+        _innerObject[key] = valueToken;
       else
-        _innerObject.Add(key, new JValue(value));
+        _innerObject.Add(key, valueToken);
+    }
+
+    [Obsolete("Use 'SaveToFile' instead.")]
+    public Task Save()
+    {
+      return SaveToFile();
     }
 
     /// <summary>
     /// Write the configuration to disk.
     /// </summary>
-    public async Task Save()
+    public async Task<bool> LoadFromFile()
     {
-      using (var fs = File.CreateText(FilePath))
+      _file.Refresh();
+      if (!_file.Exists) return false;
+      using (var fs = File.OpenText(_file.FullName))
       {
-        var jsonContents = _innerObject.ToString(Formatting.Indented);
-        await fs.WriteAsync(jsonContents);
+        var jsonContents = await fs.ReadToEndAsync();
+        _innerObject = JObject.Parse(jsonContents);
+      }
+
+      return true;
+    }
+
+    /// <summary>
+    /// Write the configuration to disk.
+    /// </summary>
+    public async Task SaveToFile()
+    {
+      _file.Directory?.Create();
+      using (var fs = File.CreateText(_file.FullName))
+      using (var jw = new JsonTextWriter(fs))
+      {
+        jw.Indentation = 4;
+        jw.Formatting = Formatting.Indented;
+        await _innerObject.WriteToAsync(jw);
+        await jw.FlushAsync();
       }
     }
   }
