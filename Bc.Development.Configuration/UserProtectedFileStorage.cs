@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Newtonsoft.Json;
@@ -8,8 +9,6 @@ namespace Bc.Development.Configuration
   internal class UserProtectedFileStorage
   {
     private static readonly object FileLock = new object();
-
-    private Encoding Encoding { get; } = Encoding.UTF8;
 
     private IDataProtector DataProtector { get; }
 
@@ -50,15 +49,13 @@ namespace Bc.Development.Configuration
     public T? Read<T>() where T : class
     {
       var bytes = Read();
-      return bytes == null ? null : JsonConvert.DeserializeObject<T>(Encoding.GetString(bytes));
+      return bytes == null ? null : JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(bytes));
     }
 
     public void Write(byte[] bytes)
     {
       File.WriteAllBytes(FilePath, Protect(bytes));
     }
-
-    public void Write(object obj) => Write(Encoding.GetBytes(JsonConvert.SerializeObject(obj)));
 
     public bool Clear()
     {

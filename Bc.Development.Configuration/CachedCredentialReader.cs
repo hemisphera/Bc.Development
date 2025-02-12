@@ -10,6 +10,7 @@ namespace Bc.Development.Configuration
   /// <summary>
   /// Provides access to the credentials cached locally in the AL language extension.
   /// </summary>
+  [Obsolete("Use 'AlUserPasswordCache' instead.")]
   public class CachedCredentialReader
   {
     /// <summary>
@@ -121,10 +122,8 @@ namespace Bc.Development.Configuration
     /// <returns>The credential or null if not found.</returns>
     public NetworkCredential? TryGetCredential(string key)
     {
-      var dictionary = new UserProtectedFileStorage(Filename).Read<Dictionary<string, UsernamePassword>>();
-      if (dictionary == null)
-        return null;
-      return dictionary.TryGetValue(key, out var savedCredentials) ? savedCredentials.AsNetworkCredential() : null;
+      var cache = AlUserPasswordCache.OpenFile(Filename);
+      return cache.Get(key);
     }
 
     /// <summary>
@@ -133,8 +132,9 @@ namespace Bc.Development.Configuration
     /// <returns>The keys.</returns>
     public IEnumerable<string> ListKeys()
     {
-      var dictionary = new UserProtectedFileStorage(Filename).Read<Dictionary<string, UsernamePassword>>();
-      return dictionary?.Keys ?? (IEnumerable<string>)Array.Empty<string>();
+      var cache = AlUserPasswordCache.OpenFile(Filename);
+      var keys = cache.GetKeys();
+      return keys.Select(k => k.Key);
     }
   }
 }
