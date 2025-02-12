@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Bc.Development.Artifacts;
 using Bc.Development.Configuration;
+using Hsp.Extensions.Io;
 using Xunit.Abstractions;
 
 namespace Bc.Development.Sdk.Tests;
@@ -9,19 +10,21 @@ public class Artifacts
 {
   private readonly ITestOutputHelper _output;
 
+
   public Artifacts(ITestOutputHelper output)
   {
     _output = output;
   }
 
+
   [Fact]
   public async Task Reader()
   {
-    foreach (var i in Enumerable.Range(0, 3))
+    foreach (var unused in Enumerable.Range(0, 3))
     {
       var sw = Stopwatch.StartNew();
       var ar = new ArtifactReader(ArtifactType.OnPrem);
-      var artifacts = await ar.GetAllRemote();
+      await ar.GetAllRemote();
       _output.WriteLine(sw.Elapsed.ToString());
     }
   }
@@ -63,25 +66,35 @@ public class Artifacts
   public async Task DownloadArtifacts()
   {
     var reader = new ArtifactReader(ArtifactType.OnPrem);
-    var latest = await reader.GetLatest("23.0", "it", false);
-    await ArtifactDownloader.Download(latest, true);
+    var latest = await reader.GetLatest("23.0", "it");
+    await ArtifactDownloader.Download(latest);
   }
 
-  [Fact]
-  public async Task EnumerateAlc()
+  [Theory]
+  [InlineData("C:\\_mytemp\\alc")]
+  [InlineData(null)]
+  public void EnumerateAlc(string? sourceFolder)
   {
-    var langs = AlLanguageExtension.Enumerate(null, "C:\\_mytemp\\alc");
+    var langs = AlLanguageExtension.Enumerate(null, sourceFolder);
   }
 
   [Fact]
   public async Task DownloadAlc()
   {
+    using var tf = new TempFolder();
     var all = await RemoteAlLanguageExtension.Enumerate();
     var latest = all.MaxBy(a => a.Version);
-    if (latest != null)
-    {
-      var ext = await latest.Download("c:\\temp\\alc");
-      Assert.NotEmpty(ext);
-    }
+    Assert.NotNull(latest);
+    var ext = await latest.Download(tf.FolderPath);
+    Assert.NotEmpty(ext);
+  }
+
+  [Fact]
+  public async Task DownloadArtifact()
+  {
+    var reader = new ArtifactReader(ArtifactType.OnPrem);
+    var latest = await reader.GetLatest("25.1", "it");
+    Assert.NotNull(latest);
+    var result = await ArtifactDownloader.Download(latest);
   }
 }
