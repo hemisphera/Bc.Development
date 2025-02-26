@@ -123,12 +123,17 @@ namespace Bc.Development.Artifacts
           await remoteStream.CopyToAsync(fs);
         }
 
-        using (var zf = ZipFile.Read(tempFile.FullName))
-        {
-          foreach (var zipEntry in zf.Entries)
+          using (var zf = ZipFile.OpenRead(tempFile.FullName))
           {
-            if (string.IsNullOrEmpty(Path.GetExtension(zipEntry.FileName))) continue;
-            zipEntry.Extract(tempFolder, ExtractExistingFileAction.OverwriteSilently);
+            foreach (var zipEntry in zf.Entries)
+            {
+              if (string.IsNullOrEmpty(Path.GetExtension(zipEntry.FullName))) continue;
+              var targetFile = new FileInfo(Path.Combine(tempFolder, zipEntry.FullName));
+              targetFile.Directory?.Create();
+              if (targetFile.Exists) targetFile.Delete();
+              zipEntry.ExtractToFile(targetFile.FullName);
+            }
+          }
           }
         }
 
