@@ -62,11 +62,13 @@ public class Artifacts
     Assert.NotNull(localFolder);
   }
 
-  [Fact]
-  public async Task DownloadArtifacts()
+  [Theory]
+  [InlineData("23.0", "it")]
+  [InlineData("24.2", "de")]
+  public async Task DownloadArtifacts(string version, string country)
   {
     var reader = new ArtifactReader(ArtifactType.OnPrem);
-    var latest = await reader.GetLatest("23.0", "it");
+    var latest = await reader.GetLatest(version, country);
     await ArtifactDownloader.Download(latest);
   }
 

@@ -1,13 +1,13 @@
-﻿using Azure.Storage.Blobs;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Threading;
 using Bc.Development.Configuration;
-using Bc.Development.Util;
 using Hsp.Extensions.Io;
-using Ionic.Zip;
+using Newtonsoft.Json.Linq;
 
 namespace Bc.Development.Artifacts
 {
@@ -16,6 +16,39 @@ namespace Bc.Development.Artifacts
   /// </summary>
   public static class ArtifactDownloader
   {
+    private static readonly Dictionary<string, string> UrlMap = new Dictionary<string, string>
+    {
+      {
+        "https://go.microsoft.com/fwlink/?LinkID=844461",
+        "https://bcartifacts.azureedge.net/prerequisites/DotNetCore.1.0.4_1.1.1-WindowsHosting.exe"
+      },
+      {
+        "https://download.microsoft.com/download/C/9/E/C9E8180D-4E51-40A6-A9BF-776990D8BCA9/rewrite_amd64.msi",
+        "https://bcartifacts.azureedge.net/prerequisites/rewrite_2.0_rtw_x64.msi"
+      },
+      {
+        "https://download.microsoft.com/download/5/5/3/553C731E-9333-40FB-ADE3-E02DC9643B31/OpenXMLSDKV25.msi",
+        "https://bcartifacts.azureedge.net/prerequisites/OpenXMLSDKv25.msi"
+      },
+
+      {
+        "https://download.microsoft.com/download/A/1/2/A129F694-233C-4C7C-860F-F73139CF2E01/ENU/x86/ReportViewer.msi",
+        "https://bcartifacts.azureedge.net/prerequisites/ReportViewer.msi"
+      },
+      {
+        "https://download.microsoft.com/download/1/3/0/13089488-91FC-4E22-AD68-5BE58BD5C014/ENU/x86/SQLSysClrTypes.msi",
+        "https://bcartifacts.azureedge.net/prerequisites/SQLSysClrTypes.msi"
+      },
+      {
+        "https://download.microsoft.com/download/3/A/6/3A632674-A016-4E31-A675-94BE390EA739/ENU/x64/sqlncli.msi",
+        "https://bcartifacts.azureedge.net/prerequisites/sqlncli.msi"
+      },
+      {
+        "https://download.microsoft.com/download/2/E/6/2E61CFA4-993B-4DD4-91DA-3737CD5CD6E3/vcredist_x86.exe",
+        "https://bcartifacts.azureedge.net/prerequisites/vcredist_x86.exe"
+      }
+    };
+
     /// <summary>
     /// Downloads the artifact specified through the artifact URI to the local cache folder.
     /// </summary>
@@ -67,7 +100,7 @@ namespace Bc.Development.Artifacts
         Task.Run(async () =>
         {
           if (!includePlatform) return null;
-          return result.PlatformArtifact = await DownloadUri(reader.MakeArtifactUri(version, Defaults.PlatformIdentifier), force);
+          return result.PlatformArtifact = await DownloadUri(reader.MakeArtifactUri(version, Defaults.PlatformIdentifier), force, true);
         })
       );
       if (country == Defaults.PlatformIdentifier)
@@ -75,7 +108,7 @@ namespace Bc.Development.Artifacts
       return result;
     }
 
-    private static async Task<BcArtifact> DownloadUri(Uri uri, bool force)
+    private static async Task<BcArtifact> DownloadUri(Uri uri, bool force, bool includePrereq = false)
     {
       var config = await BcContainerHelperConfiguration.Load();
       var lockFilePath = Path.Combine(
@@ -94,7 +127,7 @@ namespace Bc.Development.Artifacts
 
           if (!folder.Exists)
           {
-            var tempFolder = await DownloadUriToTempFolder(uri, folder);
+            var tempFolder = await DownloadUriToTempFolder(uri, folder, includePrereq);
             Directory.Move(tempFolder, folder.FullName);
           }
 
@@ -107,7 +140,7 @@ namespace Bc.Development.Artifacts
         }
     }
 
-    private static async Task<string> DownloadUriToTempFolder(Uri uri, DirectoryInfo targetFolder)
+    private static async Task<string> DownloadUriToTempFolder(Uri uri, DirectoryInfo targetFolder, bool includePrereq)
     {
       var tempFolder = targetFolder + "_dl";
       var tempFile = new FileInfo(Path.GetTempFileName());
@@ -116,12 +149,9 @@ namespace Bc.Development.Artifacts
         if (Directory.Exists(tempFolder)) Directory.Delete(tempFolder, true);
         Directory.CreateDirectory(tempFolder);
 
-        using (var fs = tempFile.Create())
         using (var cl = new HttpClient())
         {
-          var remoteStream = await cl.GetStreamAsync(uri);
-          await remoteStream.CopyToAsync(fs);
-        }
+          await DownloadFile(cl, uri, tempFile);
 
           using (var zf = ZipFile.OpenRead(tempFile.FullName))
           {
@@ -134,6 +164,10 @@ namespace Bc.Development.Artifacts
               zipEntry.ExtractToFile(targetFile.FullName);
             }
           }
+
+          if (includePrereq)
+          {
+            await DownloadPrerequisites(cl, tempFolder);
           }
         }
 
@@ -143,6 +177,49 @@ namespace Bc.Development.Artifacts
       {
         if (tempFile.Exists) tempFile.Delete();
       }
+    }
+
+    private static async Task DownloadFile(HttpClient cl, Uri uri, FileInfo tempFile)
+    {
+      try
+      {
+        tempFile.Directory?.Create();
+        using (var fs = tempFile.Create())
+        {
+          var remoteStream = await cl.GetStreamAsync(uri);
+          await remoteStream.CopyToAsync(fs);
+        }
+      }
+      catch
+      {
+        if (tempFile.Exists) tempFile.Delete();
+        throw;
+      }
+    }
+
+    private static async Task DownloadPrerequisites(HttpClient cl, string tempFolder)
+    {
+      const string index = "Prerequisite Components.json";
+      var indexFile = new FileInfo(Path.Combine(tempFolder, index));
+      if (!indexFile.Exists) return;
+      using (var fs = indexFile.OpenText())
+      {
+        var contents = JObject.Parse(await fs.ReadToEndAsync());
+        var tasks = contents.Properties().Select(async prop =>
+        {
+          var targetFile = new FileInfo(Path.Combine(tempFolder, prop.Name));
+          var sourceUri = GetSourceUri(prop.Value.Value<string>());
+          await DownloadFile(cl, sourceUri, targetFile);
+        });
+        await Task.WhenAll(tasks);
+      }
+    }
+
+    private static Uri GetSourceUri(string value)
+    {
+      var me = UrlMap.FirstOrDefault(a => a.Key.Equals(value, StringComparison.OrdinalIgnoreCase));
+      var actualUri = me.Value != null ? new Uri(me.Value) : new Uri(value);
+      return CdnHelper.ResolveUri(actualUri);
     }
   }
 }

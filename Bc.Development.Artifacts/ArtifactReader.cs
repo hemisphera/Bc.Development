@@ -11,13 +11,6 @@ namespace Bc.Development.Artifacts
   /// </summary>
   public class ArtifactReader
   {
-    private static readonly Dictionary<ArtifactStorageAccount, string> CdnMap = new Dictionary<ArtifactStorageAccount, string>
-    {
-      { ArtifactStorageAccount.BcArtifacts, "exdbf9fwegejdqak.b02.azurefd.net" },
-      { ArtifactStorageAccount.BcPublicPreview, "f2ajahg0e2cudpgh.b02.azurefd.net" },
-      { ArtifactStorageAccount.BcInsider, "fvh2ekdjecfjd6gk.b02.azurefd.net" }
-    };
-
     /// <summary>
     /// The storage account to read from.
     /// </summary>
@@ -211,7 +204,7 @@ namespace Bc.Development.Artifacts
     {
       return !useCdn
         ? $"{account}.blob.core.windows.net"
-        : $"{account}-{CdnMap[account]}";
+        : $"{account}-{CdnHelper.Resolve(account)}";
     }
 
     /// <summary>
