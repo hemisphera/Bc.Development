@@ -29,7 +29,7 @@ stages:
   jobs:
   - template: Templates/jobs/build-and-test.yml@DotNetBuilder
     parameters:
-      dotNetVersion: 8.x
+      dotNetVersion: 9.x
 - stage: Deploy
   dependsOn: Build
   jobs:
