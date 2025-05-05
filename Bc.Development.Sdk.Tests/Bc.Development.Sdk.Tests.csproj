@@ -26,7 +26,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Bc.Development.Artifacts\Bc.Development.Artifacts.csproj" />
     <ProjectReference Include="..\Bc.Development.Containers\Bc.Development.Containers.csproj" />
-    <ProjectReference Include="..\Bc.Development.TestRunner\Bc.Development.TestRunner.csproj" />
   </ItemGroup>
 
 </Project>
