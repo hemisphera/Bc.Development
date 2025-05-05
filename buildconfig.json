@@ -1,0 +1,10 @@
+{
+    "SkipTests": true,
+    "ProjectsToPack": [
+        "Bc.Development.Artifacts\\Bc.Development.Artifacts.csproj",
+        "Bc.Development.Configuration\\Bc.Development.Configuration.csproj",
+        "Bc.Development.Containers\\Bc.Development.Containers.csproj",
+        "Bc.Development.DevOps\\Bc.Development.DevOps.csproj",
+        "Bc.Development.Util\\Bc.Development.Util.csproj"
+    ]
+}
