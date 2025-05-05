@@ -24,7 +24,7 @@ public class Artifacts
     {
       var sw = Stopwatch.StartNew();
       var ar = new ArtifactReader(ArtifactType.OnPrem);
-      await ar.GetAllRemote();
+      var items = await ar.GetAllRemote();
       _output.WriteLine(sw.Elapsed.ToString());
     }
   }
@@ -70,6 +70,22 @@ public class Artifacts
     var reader = new ArtifactReader(ArtifactType.OnPrem);
     var latest = await reader.GetLatest(version, country);
     await ArtifactDownloader.Download(latest);
+  }
+
+  [Fact]
+  public async Task GetCountries()
+  {
+    var reader = new ArtifactReader(ArtifactType.OnPrem);
+    var countries = await reader.GetAllCountries();
+    Assert.NotEmpty(countries);
+  }
+
+  [Fact]
+  public async Task GetPlatform()
+  {
+    var reader = new ArtifactReader(ArtifactType.OnPrem);
+    var platforms = await reader.GetPlatforms();
+    Assert.NotEmpty(platforms);
   }
 
   [Theory]

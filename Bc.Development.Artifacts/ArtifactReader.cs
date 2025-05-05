@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
-using Azure.Storage.Blobs;
+using Newtonsoft.Json.Linq;
 
 namespace Bc.Development.Artifacts
 {
@@ -19,7 +19,7 @@ namespace Bc.Development.Artifacts
     /// <summary>
     /// Specify whether to use the CDN.
     /// </summary>
-    public bool UseCdn { get; set; }
+    public bool UseCdn { get; set; } = true;
 
     /// <summary>
     /// The artifact type to read.
@@ -52,7 +52,7 @@ namespace Bc.Development.Artifacts
     /// <param name="country">The country.</param>
     /// <param name="useCdn">Specfiy whether to use the CDN.</param>
     /// <returns>The artifact URI.</returns>
-    public static Uri MakeArtifactUri(ArtifactStorageAccount account, ArtifactType artifactType, Version version, string country, bool useCdn = false)
+    public static Uri MakeArtifactUri(ArtifactStorageAccount account, ArtifactType artifactType, Version version, string country, bool useCdn = true)
     {
       var ub = new UriBuilder(GetAccountUri(account, artifactType, useCdn));
       ub.Path += $"/{version}/{country}";
@@ -70,27 +70,70 @@ namespace Bc.Development.Artifacts
       return MakeArtifactUri(Account, ArtifactType, version, country, UseCdn);
     }
 
+    private async Task<JArray> GetFile(string name)
+    {
+      var ub = new UriBuilder(GetAccountUri(Account, ArtifactType));
+      ub.Path += $"/{name}";
+      using (var wc = new HttpClient())
+      {
+        var response = await wc.GetAsync(ub.Uri);
+        var content = await response.EnsureSuccessStatusCode().Content.ReadAsStringAsync();
+        return JArray.Parse(content);
+      }
+    }
+
+    /// <summary>
+    /// Get a list of all available countries.
+    /// </summary>
+    /// <returns>The list of countries.</returns>
+    public async Task<string[]> GetAllCountries()
+    {
+      var file = await GetFile("indexes/countries.json");
+      return file
+        .Select(a => a.Value<string>())
+        .Where(s => !string.Equals(s, "platform", StringComparison.OrdinalIgnoreCase))
+        .ToArray();
+    }
+
+    /// <summary>
+    /// Get a list of all available platforms.
+    /// </summary>
+    /// <returns>The list of platforms.</returns>
+    public async Task<ArtifactIndexEntry[]> GetPlatforms()
+    {
+      var file = await GetFile("indexes/platform.json");
+      return file.ToObject<ArtifactIndexEntry[]>();
+    }
+
+    /// <summary>
+    /// Get the index for the given country.
+    /// </summary>
+    /// <param name="country">The country to get the index for.</param>
+    /// <returns>The index.</returns>
+    public async Task<ArtifactIndex> GetIndex(string country)
+    {
+      var file = await GetFile($"indexes/{country}.json");
+      return new ArtifactIndex(country, file.ToObject<ArtifactIndexEntry[]>());
+    }
+
     /// <summary>
     /// List all remote artifacts.
     /// </summary>
     /// <returns>The artifacts.</returns>
     public async Task<BcArtifact[]> GetAllRemote()
     {
-      var accountUri = GetBlobAccountUri();
-      var blobclient = new BlobContainerClient(accountUri);
-      return await blobclient.GetBlobsAsync()
-        .Select(a =>
-        {
-          var parts = $"{a.Name}".Split('/').Reverse().Take(2).Reverse().ToArray();
-          var uri = new Uri($"{MakeArtifactUri(new Version(parts[0]), parts[1])}");
-          return BcArtifact.FromUri(uri);
-        }).ToArrayAsync();
-    }
-
-    private Uri GetBlobAccountUri()
-    {
-      // don't use CDN for BLOB client access
-      return GetAccountUri(Account, ArtifactType, false);
+      var countries = await GetAllCountries();
+      var items = await Task.WhenAll(countries.Select(async country =>
+      {
+        var index = await GetIndex(country);
+        return index.Entries
+          .Select(a =>
+          {
+            var uri = MakeArtifactUri(a.Version, index.Country);
+            return BcArtifact.FromUri(uri);
+          });
+      }));
+      return items.SelectMany(i => i).ToArray();
     }
 
     private static async Task<BcArtifact[]> GetAllLocal()
@@ -214,7 +257,7 @@ namespace Bc.Development.Artifacts
     /// <param name="artifactType">The artifact type.</param>
     /// <param name="useCdn">Specfiy whether to use the CDN.</param>
     /// <returns>The base URI.</returns>
-    public static Uri GetAccountUri(ArtifactStorageAccount account, ArtifactType artifactType, bool useCdn = false)
+    public static Uri GetAccountUri(ArtifactStorageAccount account, ArtifactType artifactType, bool useCdn = true)
     {
       return new Uri($"https://{MakeHost(account, useCdn)}/{artifactType}".ToLowerInvariant());
     }
