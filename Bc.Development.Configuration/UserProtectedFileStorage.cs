@@ -1,7 +1,5 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text;
-using Microsoft.AspNetCore.DataProtection;
 using Newtonsoft.Json;
 
 namespace Bc.Development.Configuration
@@ -10,33 +8,17 @@ namespace Bc.Development.Configuration
   {
     private static readonly object FileLock = new object();
 
-    private IDataProtector DataProtector { get; }
+    private readonly ICacheEncryption _encryption;
 
     private string FilePath { get; }
 
-    private IDataProtectionProvider Provider { get; }
 
-
-    public UserProtectedFileStorage(string fileName)
+    public UserProtectedFileStorage(string filePath, ICacheEncryption encryption)
     {
-      FilePath = fileName;
-      var folder = Path.GetDirectoryName(fileName);
-      if (folder == null) throw new DirectoryNotFoundException("The folder of the file could not be found.");
-      fileName = Path.GetFileName(fileName);
-
-      Provider = DataProtectionProvider.Create(new DirectoryInfo(folder));
-      DataProtector = Provider.CreateProtector(new[]
-      {
-        "Microsoft.Dynamics.Nav.Deployment",
-        fileName
-      });
+      _encryption = encryption;
+      FilePath = filePath;
     }
 
-
-    public static UserProtectedFileStorage CreateUserPasswordCache(string path)
-    {
-      return new UserProtectedFileStorage(path);
-    }
 
     public bool Exists() => File.Exists(FilePath);
 
@@ -64,8 +46,16 @@ namespace Bc.Development.Configuration
       return true;
     }
 
-    private byte[] Protect(byte[] data) => DataProtector.Protect(data);
+    private byte[] Protect(byte[] data)
+    {
+      lock (FileLock)
+        return _encryption.Encrypt(data);
+    }
 
-    private byte[] Unprotect(byte[] data) => DataProtector.Unprotect(data);
+    private byte[] Unprotect(byte[] data)
+    {
+      lock (FileLock)
+        return _encryption.Decrypt(data);
+    }
   }
 }

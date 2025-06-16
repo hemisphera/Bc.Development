@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -12,6 +13,8 @@ namespace Bc.Development.Configuration
   /// </summary>
   public class AlUserPasswordCache
   {
+    private readonly Version _extensionVersion;
+
     /// <summary>
     /// The file of the cache.
     /// </summary>
@@ -28,18 +31,20 @@ namespace Bc.Development.Configuration
     public static AlUserPasswordCache OpenFolder(string folder)
     {
       const string filename = "UserPasswordCache.dat";
+      var ext = AlLanguageExtension.FromFolder(folder);
       var fullPath = Path.Combine(folder, filename);
-      return OpenFile(fullPath);
+      return OpenFile(fullPath, ext.FileVersion);
     }
 
     /// <summary>
     /// Opens the cache in the specified file.
     /// </summary>
     /// <param name="filePath">The path to the file.</param>
+    /// <param name="extensionVersion">Specifies the version of the AL language extension that this file is for.</param>
     /// <returns>The cache.</returns>
-    public static AlUserPasswordCache OpenFile(string filePath)
+    public static AlUserPasswordCache OpenFile(string filePath, Version extensionVersion)
     {
-      return new AlUserPasswordCache(filePath);
+      return new AlUserPasswordCache(filePath, extensionVersion);
     }
 
     /// <summary>
@@ -57,8 +62,9 @@ namespace Bc.Development.Configuration
     }
 
 
-    private AlUserPasswordCache(string filename)
+    private AlUserPasswordCache(string filename, Version extensionVersion)
     {
+      _extensionVersion = extensionVersion;
       File = new FileInfo(filename);
       Refresh();
     }
@@ -71,7 +77,7 @@ namespace Bc.Development.Configuration
     {
       File.Refresh();
       if (!File.Exists) return;
-      var storage = new UserProtectedFileStorage(File.FullName);
+      var storage = CreateFileStorage();
       _dictionary.Clear();
 
       var content = storage.Read();
@@ -91,7 +97,7 @@ namespace Bc.Development.Configuration
     /// </summary>
     public void Save()
     {
-      var storage = new UserProtectedFileStorage(File.FullName);
+      var storage = CreateFileStorage();
       File.Directory?.Create();
       var jo = new JObject();
       foreach (var kvp in _dictionary)
@@ -104,6 +110,16 @@ namespace Bc.Development.Configuration
       }
 
       storage.Write(Encoding.UTF8.GetBytes(jo.ToString()));
+    }
+
+    private UserProtectedFileStorage CreateFileStorage()
+    {
+      var enc = _extensionVersion.Major <= 15
+        ? (ICacheEncryption)new ProtectorV15(File.FullName)
+        : new ProtectorV16();
+
+      var storage = new UserProtectedFileStorage(File.FullName, enc);
+      return storage;
     }
 
     /// <summary>

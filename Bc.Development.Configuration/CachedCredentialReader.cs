@@ -13,14 +13,17 @@ namespace Bc.Development.Configuration
   [Obsolete("Use 'AlUserPasswordCache' instead.")]
   public class CachedCredentialReader
   {
+    private readonly Version _version;
+
     /// <summary>
     /// The filename to the credential cache.
     /// </summary>
     public string Filename { get; }
 
 
-    private CachedCredentialReader(string filename)
+    private CachedCredentialReader(string filename, Version version)
     {
+      _version = version;
       Filename = filename;
     }
 
@@ -28,10 +31,11 @@ namespace Bc.Development.Configuration
     /// Creates a credential reader from a given cache file.
     /// </summary>
     /// <param name="filename">The full path to the credential cache file.</param>
+    /// <param name="version">The version of the AL language extension that this file is for.</param>
     /// <returns>The credential reader.</returns>
-    public static CachedCredentialReader Get(string filename)
+    public static CachedCredentialReader Get(string filename, Version version)
     {
-      return new CachedCredentialReader(filename);
+      return new CachedCredentialReader(filename, version);
     }
 
     /// <summary>
@@ -43,7 +47,8 @@ namespace Bc.Development.Configuration
     {
       const string filename = "UserPasswordCache.dat";
       var fullPath = Path.Combine(folder, filename);
-      return !File.Exists(fullPath) ? null : new CachedCredentialReader(fullPath);
+      var ext = AlLanguageExtension.FromFolder(folder);
+      return !File.Exists(fullPath) ? null : new CachedCredentialReader(fullPath, ext.FileVersion);
     }
 
 
@@ -88,7 +93,8 @@ namespace Bc.Development.Configuration
     {
       const string filename = "ServerInfoCache.dat";
       var fullPath = Path.Combine(folder, filename);
-      return !File.Exists(fullPath) ? null : new CachedCredentialReader(fullPath);
+      var ext = AlLanguageExtension.FromFolder(folder);
+      return !File.Exists(fullPath) ? null : new CachedCredentialReader(fullPath, ext.FileVersion);
     }
 
     /// <summary>
@@ -100,7 +106,8 @@ namespace Bc.Development.Configuration
     {
       const string filename = "TokenKeyCache.dat";
       var fullPath = Path.Combine(folder, filename);
-      return !File.Exists(fullPath) ? null : new CachedCredentialReader(fullPath);
+      var ext = AlLanguageExtension.FromFolder(folder);
+      return !File.Exists(fullPath) ? null : new CachedCredentialReader(fullPath, ext.FileVersion);
     }
 
     /// <summary>
@@ -122,7 +129,7 @@ namespace Bc.Development.Configuration
     /// <returns>The credential or null if not found.</returns>
     public NetworkCredential? TryGetCredential(string key)
     {
-      var cache = AlUserPasswordCache.OpenFile(Filename);
+      var cache = AlUserPasswordCache.OpenFile(Filename, _version);
       return cache.Get(key);
     }
 
@@ -132,7 +139,7 @@ namespace Bc.Development.Configuration
     /// <returns>The keys.</returns>
     public IEnumerable<string> ListKeys()
     {
-      var cache = AlUserPasswordCache.OpenFile(Filename);
+      var cache = AlUserPasswordCache.OpenFile(Filename, _version);
       var keys = cache.GetKeys();
       return keys.Select(k => k.Key);
     }
