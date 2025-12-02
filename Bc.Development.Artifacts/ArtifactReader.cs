@@ -142,6 +142,18 @@ namespace Bc.Development.Artifacts
       return await r.ToArrayAsync();
     }
 
+    public async Task<BcArtifact[]> TryGetAll(string versionPrefix, string country, bool local = false)
+    {
+      try
+      {
+        return await GetAll(versionPrefix, country, local);
+      }
+      catch
+      {
+        return Array.Empty<BcArtifact>();
+      }
+    }
+
     /// <summary>
     /// Lists all available artifacts (local or remote) for the given parameters.
     /// </summary>
@@ -200,8 +212,8 @@ namespace Bc.Development.Artifacts
       BcArtifact preview = null;
       BcArtifact insider = null;
       await Task.WhenAll(
-        Task.Run(async () => preview = (await previewReader.GetAll($"{baseVersion.Major + 1}.", country)).LastOrDefault()),
-        Task.Run(async () => insider = (await GetAll($"{baseVersion.Major + 1}.", country)).LastOrDefault())
+        Task.Run(async () => preview = (await previewReader.TryGetAll($"{baseVersion.Major + 1}.", country)).LastOrDefault()),
+        Task.Run(async () => insider = (await TryGetAll($"{baseVersion.Major + 1}.", country)).LastOrDefault())
       );
       if (insider == null) return preview;
       if (preview != null && preview.Version >= insider.Version) return preview;
@@ -224,8 +236,8 @@ namespace Bc.Development.Artifacts
       BcArtifact preview = null;
       BcArtifact insider = null;
       await Task.WhenAll(
-        Task.Run(async () => preview = (await previewReader.GetAll($"{baseVersion.Major}.{baseVersion.Major + 1}", country)).LastOrDefault()),
-        Task.Run(async () => insider = (await GetAll($"{baseVersion.Major}.{baseVersion.Minor + 1}", country)).LastOrDefault())
+        Task.Run(async () => preview = (await previewReader.TryGetAll($"{baseVersion.Major}.{baseVersion.Major + 1}", country)).LastOrDefault()),
+        Task.Run(async () => insider = (await TryGetAll($"{baseVersion.Major}.{baseVersion.Minor + 1}", country)).LastOrDefault())
       );
       if (insider == null) return preview;
       if (preview != null && preview.Version >= insider.Version) return preview;
